@@ -1,5 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Sparkles, Loader2, Rocket, CheckCircle2 } from 'lucide-react';
+import {
+  Sparkles,
+  Loader2,
+  Rocket,
+  CheckCircle2,
+  Palette,
+  Code2,
+  Database as DatabaseIcon,
+  TestTube,
+  Rocket as DeployIcon,
+  Gauge,
+  Bot,
+  LayoutGrid,
+  Layers,
+  Workflow,
+  BarChart3,
+  Store,
+  GitBranch,
+  ArrowRight,
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import {
   parsePrompt,
@@ -13,14 +32,39 @@ import type {
   Platform,
   Project,
   StageType,
+  BuilderTab,
+  ColorScheme,
 } from '@/types/builder';
 import PromptScreen from '@/components/PromptScreen';
 import BuildStages from '@/components/BuildStages';
 import PhonePreview from '@/components/PhonePreview';
 import RegionModal from '@/components/RegionModal';
 import Header from '@/components/Header';
+import ProjectDashboard from '@/components/ProjectDashboard';
+import CodeViewer from '@/components/CodeViewer';
+import ThemeEditor from '@/components/ThemeEditor';
+import ComponentLibrary from '@/components/ComponentLibrary';
+import ScreenFlow from '@/components/ScreenFlow';
+import AIChat from '@/components/AIChat';
+// ScreenFlow is used in the design tab via the navigation flow view
+import BuildMetrics from '@/components/BuildMetrics';
+import AuditPanel from '@/components/AuditPanel';
+import TestPanel from '@/components/TestPanel';
+import DeployDialog from '@/components/DeployDialog';
+import AppStoreAssets from '@/components/AppStoreAssets';
+import VersionHistory from '@/components/VersionHistory';
+import ExportPanel from '@/components/ExportPanel';
 
-type View = 'prompt' | 'builder';
+type View = 'prompt' | 'builder' | 'dashboard';
+
+const BUILDER_TABS: { id: BuilderTab; label: string; icon: React.ReactNode }[] = [
+  { id: 'design', label: 'Design', icon: <Palette className="w-3.5 h-3.5" /> },
+  { id: 'code', label: 'Code', icon: <Code2 className="w-3.5 h-3.5" /> },
+  { id: 'database', label: 'Data', icon: <DatabaseIcon className="w-3.5 h-3.5" /> },
+  { id: 'test', label: 'Tests', icon: <TestTube className="w-3.5 h-3.5" /> },
+  { id: 'audit', label: 'Audit', icon: <Gauge className="w-3.5 h-3.5" /> },
+  { id: 'deploy', label: 'Deploy', icon: <DeployIcon className="w-3.5 h-3.5" /> },
+];
 
 export default function App() {
   const [view, setView] = useState<View>('prompt');
@@ -30,6 +74,16 @@ export default function App() {
   const [activeLog, setActiveLog] = useState('');
   const [modalRegion, setModalRegion] = useState<AppRegion | null>(null);
   const [recentProjectName, setRecentProjectName] = useState<string>();
+  const [activeTab, setActiveTab] = useState<BuilderTab>('design');
+  const [colorScheme, setColorScheme] = useState<ColorScheme>({
+    primary: '#0f766e', secondary: '#14b8a6', accent: '#f59e0b',
+    background: '#f0fdfa', surface: '#ffffff', text: '#042f2e',
+  });
+  const [deployOpen, setDeployOpen] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const buildTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const handleStart = useCallback(async (prompt: string, platform: Platform) => {
@@ -53,8 +107,10 @@ export default function App() {
     }
     const projectRow = proj as unknown as Project;
     setProject(projectRow);
+    setColorScheme(spec.colorScheme);
     setRecentProjectName(projectRow.name);
     setView('builder');
+    setActiveTab('design');
 
     const stageRows = STAGE_DEFINITIONS.map((s, i) => ({
       project_id: projectRow.id,
@@ -158,6 +214,45 @@ export default function App() {
     setModalRegion(null);
   };
 
+  const handleAddElement = (regionId: string, element: import('@/types/builder').ScreenElement) => {
+    setRegions((prev) =>
+      prev.map((r) =>
+        r.id === regionId
+          ? { ...r, spec: { ...r.spec, elements: [...r.spec.elements, element] } }
+          : r,
+      ),
+    );
+  };
+
+  const handleColorChange = (cs: ColorScheme) => {
+    setColorScheme(cs);
+    if (project) {
+      supabase.from('projects').update({ config: { colorScheme: cs } }).eq('id', project.id);
+    }
+  };
+
+  const handleOpenProject = (proj: Project) => {
+    setProject(proj);
+    if (proj.config?.colorScheme) setColorScheme(proj.config.colorScheme);
+    setView('builder');
+    supabase
+      .from('build_stages')
+      .select('*')
+      .eq('project_id', proj.id)
+      .order('sort_order')
+      .then(({ data }) => {
+        if (data) setStages(data as unknown as BuildStage[]);
+      });
+    supabase
+      .from('app_regions')
+      .select('*')
+      .eq('project_id', proj.id)
+      .order('sort_order')
+      .then(({ data }) => {
+        if (data) setRegions(data as unknown as AppRegion[]);
+      });
+  };
+
   const handleNew = () => {
     if (buildTimer.current) clearTimeout(buildTimer.current);
     setProject(null);
@@ -178,18 +273,21 @@ export default function App() {
   const incompleteRegions = regions.filter((r) => r.status === 'incomplete');
 
   if (view === 'prompt') {
-    return (
-      <PromptScreen
-        onStart={handleStart}
-        recentProjectName={recentProjectName}
-      />
-    );
+    return <PromptScreen onStart={handleStart} recentProjectName={recentProjectName} />;
   }
 
-  const colorScheme = project?.config?.colorScheme ?? {
-    primary: '#0f766e', secondary: '#14b8a6', accent: '#f59e0b',
-    background: '#f0fdfa', surface: '#ffffff', text: '#042f2e',
-  };
+  if (view === 'dashboard') {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header
+          onNew={handleNew}
+          onHome={handleNew}
+          onDashboard={() => setView('builder')}
+        />
+        <ProjectDashboard onOpen={handleOpenProject} onNew={handleNew} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -198,38 +296,109 @@ export default function App() {
         appType={project?.app_type}
         onNew={handleNew}
         onHome={handleNew}
+        onDashboard={() => setView('dashboard')}
+        onDeploy={() => setDeployOpen(true)}
+        onExport={() => setExportOpen(true)}
+        onStore={() => setStoreOpen(true)}
+        onVersions={() => setVersionsOpen(true)}
+        buildComplete={buildComplete}
+        showActions
       />
 
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Left: Build stages */}
-        <div className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-950/50 flex flex-col max-h-[50vh] lg:max-h-none">
-          <BuildStages stages={stages} activeLog={activeLog} />
-        </div>
+      {/* Builder tabs */}
+      <div className="flex items-center gap-1 px-4 py-1.5 border-b border-slate-800 bg-slate-950/50 overflow-x-auto scrollbar-thin">
+        {BUILDER_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-slate-800 text-slate-100'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+        <div className="flex-1" />
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          {sidebarOpen ? 'Hide' : 'Show'} sidebar
+        </button>
+      </div>
 
-        {/* Center: Phone preview */}
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-4 min-h-[400px] relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl" />
-            <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl" />
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left sidebar: build pipeline */}
+        {sidebarOpen && (
+          <div className="w-72 shrink-0 border-r border-slate-800 bg-slate-950/50 flex flex-col max-h-[calc(100vh-120px)] hidden lg:flex">
+            <BuildStages stages={stages} activeLog={activeLog} />
           </div>
-          <div className="relative z-10 w-full flex items-center justify-center">
-            <PhonePreview
+        )}
+
+        {/* Center: tab content */}
+        <div className="flex-1 flex overflow-hidden min-w-0">
+          {activeTab === 'design' && (
+            <DesignTab
               regions={regions}
               colorScheme={colorScheme}
               appName={project?.name ?? 'My App'}
               onRegionClick={handleRegionClick}
+              onColorChange={handleColorChange}
+              onAddElement={handleAddElement}
             />
-          </div>
+          )}
+          {activeTab === 'code' && (
+            <CodeViewer
+              regions={regions}
+              colorScheme={colorScheme}
+              appName={project?.name ?? 'My App'}
+            />
+          )}
+          {activeTab === 'database' && (
+            <DatabaseTab regions={regions} appName={project?.name ?? 'My App'} />
+          )}
+          {activeTab === 'test' && (
+            <TestPanel regions={regions} appName={project?.name ?? 'My App'} />
+          )}
+          {activeTab === 'audit' && (
+            <AuditPanel
+              regions={regions}
+              colorScheme={colorScheme}
+              platform={project?.platform ?? 'both'}
+            />
+          )}
+          {activeTab === 'deploy' && (
+            <DeployTab
+              regions={regions}
+              stages={stages}
+              buildComplete={buildComplete}
+              incompleteCount={incompleteRegions.length}
+              onDeploy={() => setDeployOpen(true)}
+              onExport={() => setExportOpen(true)}
+              onStore={() => setStoreOpen(true)}
+              onVersions={() => setVersionsOpen(true)}
+            />
+          )}
         </div>
 
-        {/* Right: Status panel */}
-        <div className="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-950/50 p-4 max-h-[40vh] lg:max-h-none overflow-y-auto scrollbar-thin">
-          <BuildStatusPanel
+        {/* Right sidebar: context panel */}
+        <div className="w-80 shrink-0 border-l border-slate-800 bg-slate-950/50 flex flex-col max-h-[calc(100vh-120px)] hidden xl:flex">
+          <RightSidebar
+            activeTab={activeTab}
+            regions={regions}
+            stages={stages}
+            colorScheme={colorScheme}
+            platform={project?.platform as Platform}
+            appName={project?.name ?? ''}
+            appType={project?.app_type ?? 'general'}
             isBuilding={isBuilding}
             buildComplete={buildComplete}
             incompleteCount={incompleteRegions.length}
-            platform={project?.platform as Platform}
-            appName={project?.name ?? ''}
+            onDeploy={() => setDeployOpen(true)}
           />
         </div>
       </div>
@@ -239,7 +408,309 @@ export default function App() {
         onClose={() => setModalRegion(null)}
         onComplete={handleCompleteRegion}
       />
+      <DeployDialog
+        open={deployOpen}
+        onClose={() => setDeployOpen(false)}
+        platform={project?.platform as Platform}
+        appName={project?.name ?? ''}
+        buildComplete={buildComplete}
+      />
+      <AppStoreAssets
+        open={storeOpen}
+        onClose={() => setStoreOpen(false)}
+        appName={project?.name ?? ''}
+        appType={project?.app_type ?? 'general'}
+        colorScheme={colorScheme}
+        regions={regions}
+      />
+      <VersionHistory
+        open={versionsOpen}
+        onClose={() => setVersionsOpen(false)}
+        appName={project?.name ?? ''}
+        screenCount={regions.length}
+      />
+      <ExportPanel
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        regions={regions}
+        colorScheme={colorScheme}
+        appName={project?.name ?? ''}
+      />
     </div>
+  );
+}
+
+function DesignTab({
+  regions,
+  colorScheme,
+  appName,
+  onRegionClick,
+  onColorChange,
+  onAddElement,
+}: {
+  regions: AppRegion[];
+  colorScheme: ColorScheme;
+  appName: string;
+  onRegionClick: (r: AppRegion) => void;
+  onColorChange: (cs: ColorScheme) => void;
+  onAddElement: (regionId: string, el: import('@/types/builder').ScreenElement) => void;
+}) {
+  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const selectedRegion = regions.find((r) => r.id === selectedRegionId) ?? regions[0];
+
+  return (
+    <div className="flex flex-1 overflow-hidden">
+      {/* Component library */}
+      <div className="w-56 shrink-0 border-r border-slate-800 bg-slate-950/30">
+        <ComponentLibrary
+          onAdd={(el) => selectedRegion && onAddElement(selectedRegion.id, el)}
+        />
+      </div>
+
+      {/* Phone preview */}
+      <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-4 min-h-[400px] relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl" />
+        </div>
+        <div className="relative z-10 w-full flex items-center justify-center">
+          <PhonePreview
+            regions={regions}
+            colorScheme={colorScheme}
+            appName={appName}
+            onRegionClick={onRegionClick}
+          />
+        </div>
+      </div>
+
+      {/* Theme editor + screen flow */}
+      <div className="w-64 shrink-0 border-l border-slate-800 bg-slate-950/30 overflow-y-auto scrollbar-thin">
+        <div className="border-b border-slate-800">
+          <div className="px-4 pt-3 pb-2">
+            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Active Screen</p>
+            <select
+              value={selectedRegionId ?? ''}
+              onChange={(e) => setSelectedRegionId(e.target.value)}
+              className="w-full rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 px-2 py-1.5 focus:outline-none"
+            >
+              {regions.map((r) => (
+                <option key={r.id} value={r.id}>{r.region_name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <ThemeEditor colorScheme={colorScheme} onChange={onColorChange} />
+      </div>
+    </div>
+  );
+}
+
+function DatabaseTab({ regions, appName }: { regions: AppRegion[]; appName: string }) {
+  const tables = generateSchema(regions, appName);
+  return (
+    <div className="flex-1 overflow-y-auto scrollbar-thin p-6 bg-slate-950/30">
+      <div className="flex items-center gap-2 mb-4">
+        <DatabaseIcon className="w-4 h-4 text-cyan-400" />
+        <h3 className="text-sm font-semibold text-slate-200">Database Schema</h3>
+        <span className="text-xs text-slate-500 ml-auto">{tables.length} tables</span>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {tables.map((table) => (
+          <div key={table.name} className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden animate-fade-in-up">
+            <div className="px-3 py-2 border-b border-slate-800 bg-slate-800/50 flex items-center gap-2">
+              <DatabaseIcon className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-sm font-semibold text-slate-200">{table.name}</span>
+            </div>
+            <div className="p-2 space-y-1">
+              {table.columns.map((col) => (
+                <div key={col.name} className="flex items-center justify-between text-xs px-2 py-1 rounded hover:bg-slate-800/50">
+                  <span className="text-slate-300 font-mono">{col.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-500 font-mono text-[10px]">{col.type}</span>
+                    {col.isPrimary && <span className="text-[8px] px-1 rounded bg-amber-500/20 text-amber-400">PK</span>}
+                    {col.isForeign && <span className="text-[8px] px-1 rounded bg-cyan-500/20 text-cyan-400">FK</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6">
+        <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-2">Generated SQL</h4>
+        <div className="rounded-xl border border-slate-800 bg-[#0d1117] p-4 overflow-auto scrollbar-thin">
+          <pre className="text-xs font-mono text-slate-300 leading-relaxed">{generateSQL(tables)}</pre>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeployTab({
+  regions,
+  stages,
+  buildComplete,
+  incompleteCount,
+  onDeploy,
+  onExport,
+  onStore,
+  onVersions,
+}: {
+  regions: AppRegion[];
+  stages: BuildStage[];
+  buildComplete: boolean;
+  incompleteCount: number;
+  onDeploy: () => void;
+  onExport: () => void;
+  onStore: () => void;
+  onVersions: () => void;
+}) {
+  return (
+    <div className="flex-1 overflow-y-auto scrollbar-thin p-6 bg-slate-950/30">
+      <div className="max-w-2xl mx-auto space-y-4">
+        <div className="flex items-center gap-2 mb-2">
+          <DeployIcon className="w-4 h-4 text-emerald-400" />
+          <h3 className="text-sm font-semibold text-slate-200">Deployment</h3>
+        </div>
+
+        <DeployCard
+          title="Deploy to Cloud"
+          description="Build and deploy your app to preview, staging, or production."
+          icon={<Rocket className="w-5 h-5" />}
+          onClick={onDeploy}
+          disabled={!buildComplete && incompleteCount > 0}
+          status={buildComplete ? 'Ready' : `${incompleteCount} pending`}
+        />
+
+        <DeployCard
+          title="Export Code"
+          description="Download source code for React Native, Flutter, Swift, Kotlin, or Web."
+          icon={<Code2 className="w-5 h-5" />}
+          onClick={onExport}
+          status="5 targets"
+        />
+
+        <DeployCard
+          title="App Store Assets"
+          description="Generate app icon, screenshots, description, and keywords for store listing."
+          icon={<Store className="w-5 h-5" />}
+          onClick={onStore}
+          status="Auto-generated"
+        />
+
+        <DeployCard
+          title="Version History"
+          description="View change log and version timeline of your project."
+          icon={<GitBranch className="w-5 h-5" />}
+          onClick={onVersions}
+          status="7 versions"
+        />
+
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+          <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-3">Build Summary</h4>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <p className="text-2xl font-bold text-slate-100">{regions.length}</p>
+              <p className="text-xs text-slate-500">Screens</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-slate-100">{stages.length}</p>
+              <p className="text-xs text-slate-500">Build Steps</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-emerald-400">
+                {stages.filter((s) => s.status === 'completed').length}
+              </p>
+              <p className="text-xs text-slate-500">Completed</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeployCard({
+  title,
+  description,
+  icon,
+  onClick,
+  disabled,
+  status,
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  status: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 text-left hover:border-slate-700 hover:bg-slate-900/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed group animate-fade-in-up"
+    >
+      <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 transition-colors shrink-0">
+        {icon}
+      </div>
+      <div className="flex-1">
+        <h4 className="text-sm font-semibold text-slate-200">{title}</h4>
+        <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+      </div>
+      <div className="text-right shrink-0">
+        <span className="text-xs text-slate-400">{status}</span>
+        <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-slate-300 group-hover:translate-x-0.5 transition-all mt-1" />
+      </div>
+    </button>
+  );
+}
+
+function RightSidebar({
+  activeTab,
+  regions,
+  stages,
+  colorScheme,
+  platform,
+  appName,
+  appType,
+  isBuilding,
+  buildComplete,
+  incompleteCount,
+  onDeploy,
+}: {
+  activeTab: BuilderTab;
+  regions: AppRegion[];
+  stages: BuildStage[];
+  colorScheme: ColorScheme;
+  platform: Platform;
+  appName: string;
+  appType: string;
+  isBuilding: boolean;
+  buildComplete: boolean;
+  incompleteCount: number;
+  onDeploy: () => void;
+}) {
+  if (activeTab === 'audit') {
+    return <BuildMetrics regions={regions} stages={stages} />;
+  }
+  if (activeTab === 'deploy') {
+    return (
+      <div className="p-4 space-y-3">
+        <BuildStatusPanel
+          isBuilding={isBuilding}
+          buildComplete={buildComplete}
+          incompleteCount={incompleteCount}
+          platform={platform}
+          appName={appName}
+          onDeploy={onDeploy}
+        />
+      </div>
+    );
+  }
+  return (
+    <AIChat appName={appName} appType={appType} screenCount={regions.length} />
   );
 }
 
@@ -249,12 +720,14 @@ function BuildStatusPanel({
   incompleteCount,
   platform,
   appName,
+  onDeploy,
 }: {
   isBuilding: boolean;
   buildComplete: boolean;
   incompleteCount: number;
   platform: Platform;
   appName: string;
+  onDeploy: () => void;
 }) {
   return (
     <div className="space-y-4">
@@ -302,8 +775,9 @@ function BuildStatusPanel({
             </div>
           )}
           <button
-            className="w-full rounded-lg py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 text-sm font-semibold transition-transform hover:scale-[1.02] active:scale-95"
+            onClick={onDeploy}
             disabled={incompleteCount > 0}
+            className="w-full rounded-lg py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 text-sm font-semibold transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50"
           >
             {incompleteCount > 0 ? 'Complete all regions first' : 'Deploy to store'}
           </button>
@@ -317,4 +791,45 @@ function BuildStatusPanel({
       </div>
     </div>
   );
+}
+
+function generateSchema(regions: AppRegion[], appName: string) {
+  const tables: { name: string; columns: { name: string; type: string; isPrimary?: boolean; isForeign?: boolean }[] }[] = [
+    {
+      name: 'users',
+      columns: [
+        { name: 'id', type: 'uuid', isPrimary: true },
+        { name: 'email', type: 'text' },
+        { name: 'name', type: 'text' },
+        { name: 'created_at', type: 'timestamptz' },
+      ],
+    },
+    {
+      name: appName.toLowerCase().replace(/\s+/g, '_') + '_data',
+      columns: [
+        { name: 'id', type: 'uuid', isPrimary: true },
+        { name: 'user_id', type: 'uuid', isForeign: true },
+        { name: 'title', type: 'text' },
+        { name: 'status', type: 'text' },
+        { name: 'created_at', type: 'timestamptz' },
+      ],
+    },
+  ];
+  const hasAuth = regions.some((r) => r.region_type === 'auth');
+  if (!hasAuth) tables.shift();
+  return tables;
+}
+
+function generateSQL(tables: { name: string; columns: { name: string; type: string; isPrimary?: boolean; isForeign?: boolean }[] }[]): string {
+  return tables
+    .map(
+      (t) =>
+        `CREATE TABLE ${t.name} (\n${t.columns
+          .map(
+            (c) =>
+              `  ${c.name} ${c.type}${c.isPrimary ? ' PRIMARY KEY DEFAULT gen_random_uuid()' : ''}${c.isForeign ? ` REFERENCES ${t.name === 'users' ? 'profiles' : 'users'}(id)` : ''}`,
+          )
+          .join(',\n')}\n);`,
+    )
+    .join('\n\n');
 }

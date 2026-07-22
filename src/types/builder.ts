@@ -21,6 +21,13 @@ export type RegionType =
   | 'auth'
   | 'settings';
 
+export type DeviceType = 'iphone' | 'android' | 'tablet';
+export type PreviewTheme = 'light' | 'dark';
+export type CodeTarget = 'react-native' | 'flutter' | 'swift' | 'kotlin' | 'web';
+export type BuilderTab = 'design' | 'code' | 'database' | 'test' | 'deploy' | 'audit';
+export type DeployEnvironment = 'preview' | 'staging' | 'production';
+export type Language = 'en' | 'ar';
+
 export interface AppSpec {
   appName: string;
   appType: string;
@@ -88,4 +95,92 @@ export interface Project {
   config: { colorScheme?: ColorScheme };
   created_at: string;
   updated_at: string;
+}
+
+export interface ProjectTemplate {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  icon: string;
+  prompt: string;
+  features: string[];
+  colorScheme: ColorScheme;
+  screenCount: number;
+  tags: string[];
+}
+
+export interface CodeArtifact {
+  filename: string;
+  language: string;
+  content: string;
+  target: CodeTarget;
+}
+
+export interface AuditCategory {
+  name: string;
+  score: number;
+  maxScore: number;
+  issues: AuditIssue[];
+}
+
+export interface AuditIssue {
+  severity: 'high' | 'medium' | 'low';
+  message: string;
+  element?: string;
+}
+
+export interface TestResult {
+  name: string;
+  status: 'pass' | 'fail' | 'skip';
+  duration: number;
+  message?: string;
+  suite: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+export interface VersionEntry {
+  id: string;
+  version: string;
+  timestamp: string;
+  changes: string;
+  author: string;
+}
+
+export interface BuildMetric {
+  label: string;
+  value: string;
+  detail?: string;
+  icon?: string;
+}
+
+export interface AppStoreMetadata {
+  appName: string;
+  subtitle: string;
+  description: string;
+  keywords: string[];
+  category: string;
+  iconColor: string;
+  screenshots: string[];
+}
+
+export interface NavNode {
+  id: string;
+  label: string;
+  screenName: string;
+  x: number;
+  y: number;
+  type: RegionType;
+}
+
+export interface NavEdge {
+  from: string;
+  to: string;
+  label: string;
 }
