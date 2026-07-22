@@ -24,7 +24,7 @@ export type RegionType =
 export type DeviceType = 'iphone' | 'android' | 'tablet';
 export type PreviewTheme = 'light' | 'dark';
 export type CodeTarget = 'react-native' | 'flutter' | 'swift' | 'kotlin' | 'web';
-export type BuilderTab = 'design' | 'code' | 'database' | 'test' | 'deploy' | 'audit';
+export type BuilderTab = 'design' | 'code' | 'database' | 'test' | 'deploy' | 'audit' | 'analytics' | 'performance';
 export type DeployEnvironment = 'preview' | 'staging' | 'production';
 export type Language = 'en' | 'ar';
 

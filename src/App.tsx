@@ -18,6 +18,21 @@ import {
   Store,
   GitBranch,
   ArrowRight,
+  Bell,
+  Search as SearchIcon,
+  Settings as SettingsIcon,
+  Keyboard,
+  Share2,
+  Command as CommandIcon,
+  Image as ImageIcon,
+  Type,
+  LayoutTemplate,
+  Send,
+  Bug,
+  MessageSquare,
+  Activity,
+  TrendingUp,
+  Zap,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import {
@@ -34,6 +49,7 @@ import type {
   StageType,
   BuilderTab,
   ColorScheme,
+  ScreenElement,
 } from '@/types/builder';
 import PromptScreen from '@/components/PromptScreen';
 import BuildStages from '@/components/BuildStages';
@@ -46,7 +62,6 @@ import ThemeEditor from '@/components/ThemeEditor';
 import ComponentLibrary from '@/components/ComponentLibrary';
 import ScreenFlow from '@/components/ScreenFlow';
 import AIChat from '@/components/AIChat';
-// ScreenFlow is used in the design tab via the navigation flow view
 import BuildMetrics from '@/components/BuildMetrics';
 import AuditPanel from '@/components/AuditPanel';
 import TestPanel from '@/components/TestPanel';
@@ -54,6 +69,26 @@ import DeployDialog from '@/components/DeployDialog';
 import AppStoreAssets from '@/components/AppStoreAssets';
 import VersionHistory from '@/components/VersionHistory';
 import ExportPanel from '@/components/ExportPanel';
+import CommandPalette, { type Command } from '@/components/CommandPalette';
+import GlobalSearch from '@/components/GlobalSearch';
+import AssetManager from '@/components/AssetManager';
+import TypographyEditor, { type TypographyConfig } from '@/components/TypographyEditor';
+import ScreenTemplatePicker from '@/components/ScreenTemplatePicker';
+import AnalyticsDashboard from '@/components/AnalyticsDashboard';
+import PushComposer from '@/components/PushComposer';
+import OnboardingBuilder from '@/components/OnboardingBuilder';
+import ApiExplorer from '@/components/ApiExplorer';
+import SeedDataPanel from '@/components/SeedDataPanel';
+import ErrorMonitor from '@/components/ErrorMonitor';
+import PerformanceProfiler from '@/components/PerformanceProfiler';
+import CommentsPanel from '@/components/CommentsPanel';
+import ShareDialog from '@/components/ShareDialog';
+import SettingsPanel, { type UserPreferences } from '@/components/SettingsPanel';
+import ShortcutsGuide from '@/components/ShortcutsGuide';
+import ActivityLog from '@/components/ActivityLog';
+import NotificationCenter from '@/components/NotificationCenter';
+import { useHistory } from '@/lib/useHistory';
+import type { ScreenTemplateDef } from '@/lib/screenTemplates';
 
 type View = 'prompt' | 'builder' | 'dashboard';
 
@@ -63,14 +98,36 @@ const BUILDER_TABS: { id: BuilderTab; label: string; icon: React.ReactNode }[] =
   { id: 'database', label: 'Data', icon: <DatabaseIcon className="w-3.5 h-3.5" /> },
   { id: 'test', label: 'Tests', icon: <TestTube className="w-3.5 h-3.5" /> },
   { id: 'audit', label: 'Audit', icon: <Gauge className="w-3.5 h-3.5" /> },
+  { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+  { id: 'performance', label: 'Profiler', icon: <Zap className="w-3.5 h-3.5" /> },
   { id: 'deploy', label: 'Deploy', icon: <DeployIcon className="w-3.5 h-3.5" /> },
 ];
+
+const DEFAULT_PREFS: UserPreferences = {
+  theme: 'dark',
+  language: 'en',
+  autoSave: true,
+  showGrid: false,
+  reducedMotion: false,
+  defaultPlatform: 'both',
+  codeFontSize: 13,
+};
+
+const DEFAULT_TYPOGRAPHY: TypographyConfig = {
+  fontFamily: 'Inter, system-ui, sans-serif',
+  headingSize: 24,
+  bodySize: 14,
+  headingWeight: 700,
+  bodyWeight: 400,
+  lineHeight: 1.5,
+  letterSpacing: 0,
+};
 
 export default function App() {
   const [view, setView] = useState<View>('prompt');
   const [project, setProject] = useState<Project | null>(null);
   const [stages, setStages] = useState<BuildStage[]>([]);
-  const [regions, setRegions] = useState<AppRegion[]>([]);
+  const { state: regions, set: setRegions, undo, redo, canUndo, canRedo } = useHistory<AppRegion[]>([]);
   const [activeLog, setActiveLog] = useState('');
   const [modalRegion, setModalRegion] = useState<AppRegion | null>(null);
   const [recentProjectName, setRecentProjectName] = useState<string>();
@@ -79,10 +136,29 @@ export default function App() {
     primary: '#0f766e', secondary: '#14b8a6', accent: '#f59e0b',
     background: '#f0fdfa', surface: '#ffffff', text: '#042f2e',
   });
+  const [typography, setTypography] = useState<TypographyConfig>(DEFAULT_TYPOGRAPHY);
+  const [prefs, setPrefs] = useState<UserPreferences>(DEFAULT_PREFS);
+
   const [deployOpen, setDeployOpen] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [assetOpen, setAssetOpen] = useState(false);
+  const [typographyOpen, setTypographyOpen] = useState(false);
+  const [screenTemplateOpen, setScreenTemplateOpen] = useState(false);
+  const [pushOpen, setPushOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [apiOpen, setApiOpen] = useState(false);
+  const [seedOpen, setSeedOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const buildTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -102,9 +178,7 @@ export default function App() {
       .select()
       .single();
 
-    if (projErr || !proj) {
-      throw new Error(projErr?.message ?? 'Failed to create project');
-    }
+    if (projErr || !proj) throw new Error(projErr?.message ?? 'Failed to create project');
     const projectRow = proj as unknown as Project;
     setProject(projectRow);
     setColorScheme(spec.colorScheme);
@@ -113,42 +187,26 @@ export default function App() {
     setActiveTab('design');
 
     const stageRows = STAGE_DEFINITIONS.map((s, i) => ({
-      project_id: projectRow.id,
-      stage_name: s.name,
-      stage_type: s.type,
-      status: 'pending',
-      logs: '',
-      sort_order: i,
+      project_id: projectRow.id, stage_name: s.name, stage_type: s.type,
+      status: 'pending', logs: '', sort_order: i,
     }));
     const { data: insertedStages, error: stageErr } = await supabase
-      .from('build_stages')
-      .insert(stageRows)
-      .select();
-    if (stageErr || !insertedStages) {
-      throw new Error(stageErr?.message ?? 'Failed to create build stages');
-    }
+      .from('build_stages').insert(stageRows).select();
+    if (stageErr || !insertedStages) throw new Error(stageErr?.message ?? 'Failed to create build stages');
     setStages(insertedStages as unknown as BuildStage[]);
 
     const regionRows = spec.screens.map((screen, i) => ({
-      project_id: projectRow.id,
-      region_name: screen.name,
-      region_type: screen.regionType,
+      project_id: projectRow.id, region_name: screen.name, region_type: screen.regionType,
       status: screen.intentionallyIncomplete ? 'incomplete' : 'complete',
-      spec: screen,
-      description: screen.description,
-      sort_order: i,
+      spec: screen, description: screen.description, sort_order: i,
     }));
     const { data: insertedRegions, error: regionErr } = await supabase
-      .from('app_regions')
-      .insert(regionRows)
-      .select();
-    if (regionErr || !insertedRegions) {
-      throw new Error(regionErr?.message ?? 'Failed to create app regions');
-    }
-    setRegions(insertedRegions as unknown as AppRegion[]);
+      .from('app_regions').insert(regionRows).select();
+    if (regionErr || !insertedRegions) throw new Error(regionErr?.message ?? 'Failed to create app regions');
+    setRegions(insertedRegions as unknown as AppRegion[], true);
 
     runBuildPipeline(projectRow.id, spec.appType);
-  }, []);
+  }, [setRegions]);
 
   const runBuildPipeline = useCallback((projectId: string, appType: string) => {
     const stageDefs = STAGE_DEFINITIONS;
@@ -164,16 +222,8 @@ export default function App() {
       const logs = stageLogs(def.type, appType);
       let logIdx = 0;
 
-      setStages((prev) =>
-        prev.map((s) =>
-          s.stage_type === def.type ? { ...s, status: 'in_progress' } : s,
-        ),
-      );
-      supabase
-        .from('build_stages')
-        .update({ status: 'in_progress' })
-        .eq('project_id', projectId)
-        .eq('stage_type', def.type);
+      setStages((prev) => prev.map((s) => s.stage_type === def.type ? { ...s, status: 'in_progress' } : s));
+      supabase.from('build_stages').update({ status: 'in_progress' }).eq('project_id', projectId).eq('stage_type', def.type);
 
       const streamLog = () => {
         if (logIdx < logs.length) {
@@ -181,96 +231,132 @@ export default function App() {
           logIdx++;
           buildTimer.current = setTimeout(streamLog, 700);
         } else {
-          setStages((prev) =>
-            prev.map((s) =>
-              s.stage_type === def.type ? { ...s, status: 'completed', logs: logs.join('\n') } : s,
-            ),
-          );
-          supabase
-            .from('build_stages')
-            .update({ status: 'completed', logs: logs.join('\n') })
-            .eq('project_id', projectId)
-            .eq('stage_type', def.type);
-
+          setStages((prev) => prev.map((s) => s.stage_type === def.type ? { ...s, status: 'completed', logs: logs.join('\n') } : s));
+          supabase.from('build_stages').update({ status: 'completed', logs: logs.join('\n') }).eq('project_id', projectId).eq('stage_type', def.type);
           stageIdx++;
           buildTimer.current = setTimeout(runNextStage, 350);
         }
       };
       streamLog();
     };
-
     runNextStage();
   }, []);
 
-  const handleRegionClick = (region: AppRegion) => {
-    setModalRegion(region);
-  };
-
   const handleCompleteRegion = async (regionId: string) => {
-    setRegions((prev) =>
-      prev.map((r) => (r.id === regionId ? { ...r, status: 'complete' } : r)),
-    );
+    setRegions((prev) => prev.map((r) => (r.id === regionId ? { ...r, status: 'complete' } : r)));
     await supabase.from('app_regions').update({ status: 'complete' }).eq('id', regionId);
     setModalRegion(null);
   };
 
-  const handleAddElement = (regionId: string, element: import('@/types/builder').ScreenElement) => {
-    setRegions((prev) =>
-      prev.map((r) =>
-        r.id === regionId
-          ? { ...r, spec: { ...r.spec, elements: [...r.spec.elements, element] } }
-          : r,
-      ),
-    );
+  const handleAddElement = (regionId: string, element: ScreenElement) => {
+    setRegions((prev) => prev.map((r) =>
+      r.id === regionId ? { ...r, spec: { ...r.spec, elements: [...r.spec.elements, element] } } : r,
+    ));
+  };
+
+  const handleAddScreenFromTemplate = (template: ScreenTemplateDef) => {
+    if (!project) return;
+    const newRegion: AppRegion = {
+      id: crypto.randomUUID(),
+      project_id: project.id,
+      region_name: template.name,
+      region_type: template.regionType,
+      status: 'complete',
+      spec: { name: template.name, regionType: template.regionType, elements: template.elements, description: template.description },
+      description: template.description,
+      sort_order: regions.length,
+      created_at: new Date().toISOString(),
+    };
+    setRegions((prev) => [...prev, newRegion]);
   };
 
   const handleColorChange = (cs: ColorScheme) => {
     setColorScheme(cs);
-    if (project) {
-      supabase.from('projects').update({ config: { colorScheme: cs } }).eq('id', project.id);
-    }
+    if (project) supabase.from('projects').update({ config: { colorScheme: cs } }).eq('id', project.id);
   };
 
   const handleOpenProject = (proj: Project) => {
     setProject(proj);
     if (proj.config?.colorScheme) setColorScheme(proj.config.colorScheme);
     setView('builder');
-    supabase
-      .from('build_stages')
-      .select('*')
-      .eq('project_id', proj.id)
-      .order('sort_order')
-      .then(({ data }) => {
-        if (data) setStages(data as unknown as BuildStage[]);
-      });
-    supabase
-      .from('app_regions')
-      .select('*')
-      .eq('project_id', proj.id)
-      .order('sort_order')
-      .then(({ data }) => {
-        if (data) setRegions(data as unknown as AppRegion[]);
-      });
+    supabase.from('build_stages').select('*').eq('project_id', proj.id).order('sort_order').then(({ data }) => {
+      if (data) setStages(data as unknown as BuildStage[]);
+    });
+    supabase.from('app_regions').select('*').eq('project_id', proj.id).order('sort_order').then(({ data }) => {
+      if (data) setRegions(data as unknown as AppRegion[], true);
+    });
   };
 
   const handleNew = () => {
     if (buildTimer.current) clearTimeout(buildTimer.current);
     setProject(null);
     setStages([]);
-    setRegions([]);
+    setRegions([], true);
     setActiveLog('');
     setView('prompt');
   };
 
   useEffect(() => {
-    return () => {
-      if (buildTimer.current) clearTimeout(buildTimer.current);
-    };
+    return () => { if (buildTimer.current) clearTimeout(buildTimer.current); };
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (view !== 'builder') return;
+    const handler = (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey;
+      if (meta && e.key === 'k') { e.preventDefault(); setCommandOpen(true); }
+      else if (meta && e.key === '/') { e.preventDefault(); setSearchOpen(true); }
+      else if (meta && e.key === 'b') { e.preventDefault(); setSidebarOpen(s => !s); }
+      else if (meta && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if (meta && e.shiftKey && e.key === 'z') { e.preventDefault(); redo(); }
+      else if (meta && e.key === 'e') { e.preventDefault(); setExportOpen(true); }
+      else if (meta && e.shiftKey && e.key === 'd') { e.preventDefault(); setDeployOpen(true); }
+      else if (meta && e.shiftKey && e.key === 's') { e.preventDefault(); setStoreOpen(true); }
+      else if (e.key === '?' && !meta) { e.preventDefault(); setShortcutsOpen(true); }
+      else if (!meta && ['1','2','3','4','5','6'].includes(e.key)) {
+        const tabs: BuilderTab[] = ['design','code','database','test','audit','deploy'];
+        const idx = parseInt(e.key) - 1;
+        if (tabs[idx]) setActiveTab(tabs[idx]);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [view, undo, redo]);
 
   const isBuilding = stages.some((s) => s.status === 'in_progress' || s.status === 'pending');
   const buildComplete = stages.length > 0 && stages.every((s) => s.status === 'completed');
   const incompleteRegions = regions.filter((r) => r.status === 'incomplete');
+
+  const commands: Command[] = [
+    { id: 'search', label: 'Search screens', shortcut: '⌘/', icon: <SearchIcon className="w-4 h-4" />, section: 'Navigation', action: () => setSearchOpen(true) },
+    { id: 'design', label: 'Go to Design tab', shortcut: '1', icon: <Palette className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('design') },
+    { id: 'code', label: 'Go to Code tab', shortcut: '2', icon: <Code2 className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('code') },
+    { id: 'database', label: 'Go to Data tab', shortcut: '3', icon: <DatabaseIcon className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('database') },
+    { id: 'test', label: 'Go to Tests tab', shortcut: '4', icon: <TestTube className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('test') },
+    { id: 'audit', label: 'Go to Audit tab', shortcut: '5', icon: <Gauge className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('audit') },
+    { id: 'analytics', label: 'Go to Analytics', icon: <BarChart3 className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('analytics') },
+    { id: 'performance', label: 'Go to Profiler', icon: <Zap className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('performance') },
+    { id: 'deploy', label: 'Go to Deploy tab', shortcut: '6', icon: <DeployIcon className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('deploy') },
+    { id: 'deploy-dialog', label: 'Deploy to cloud', shortcut: '⌘⇧D', icon: <Rocket className="w-4 h-4" />, section: 'Actions', action: () => setDeployOpen(true) },
+    { id: 'export', label: 'Export code', shortcut: '⌘E', icon: <Code2 className="w-4 h-4" />, section: 'Actions', action: () => setExportOpen(true) },
+    { id: 'store', label: 'App store assets', shortcut: '⌘⇧S', icon: <Store className="w-4 h-4" />, section: 'Actions', action: () => setStoreOpen(true) },
+    { id: 'versions', label: 'Version history', icon: <GitBranch className="w-4 h-4" />, section: 'Actions', action: () => setVersionsOpen(true) },
+    { id: 'share', label: 'Share preview link', icon: <Share2 className="w-4 h-4" />, section: 'Actions', action: () => setShareOpen(true) },
+    { id: 'assets', label: 'Open asset library', icon: <ImageIcon className="w-4 h-4" />, section: 'Design', action: () => setAssetOpen(true) },
+    { id: 'typography', label: 'Edit typography', icon: <Type className="w-4 h-4" />, section: 'Design', action: () => setTypographyOpen(true) },
+    { id: 'screen-templates', label: 'Add screen from template', icon: <LayoutTemplate className="w-4 h-4" />, section: 'Design', action: () => setScreenTemplateOpen(true) },
+    { id: 'push', label: 'Compose push notification', icon: <Send className="w-4 h-4" />, section: 'Engagement', action: () => setPushOpen(true) },
+    { id: 'onboarding', label: 'Build onboarding flow', icon: <Sparkles className="w-4 h-4" />, section: 'Engagement', action: () => setOnboardingOpen(true) },
+    { id: 'api', label: 'Explore API endpoints', icon: <Code2 className="w-4 h-4" />, section: 'Backend', action: () => setApiOpen(true) },
+    { id: 'seed', label: 'Generate seed data', icon: <DatabaseIcon className="w-4 h-4" />, section: 'Backend', action: () => setSeedOpen(true) },
+    { id: 'errors', label: 'View error monitor', icon: <Bug className="w-4 h-4" />, section: 'Monitoring', action: () => setErrorOpen(true) },
+    { id: 'comments', label: 'Open comments', icon: <MessageSquare className="w-4 h-4" />, section: 'Collaboration', action: () => setCommentsOpen(true) },
+    { id: 'settings', label: 'Open preferences', icon: <SettingsIcon className="w-4 h-4" />, section: 'Settings', action: () => setSettingsOpen(true) },
+    { id: 'shortcuts', label: 'Keyboard shortcuts', shortcut: '?', icon: <Keyboard className="w-4 h-4" />, section: 'Settings', action: () => setShortcutsOpen(true) },
+    { id: 'undo', label: 'Undo', shortcut: '⌘Z', icon: <ArrowRight className="w-4 h-4 rotate-180" />, section: 'Editing', action: undo },
+    { id: 'redo', label: 'Redo', shortcut: '⌘⇧Z', icon: <ArrowRight className="w-4 h-4" />, section: 'Editing', action: redo },
+  ];
 
   if (view === 'prompt') {
     return <PromptScreen onStart={handleStart} recentProjectName={recentProjectName} />;
@@ -279,11 +365,7 @@ export default function App() {
   if (view === 'dashboard') {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header
-          onNew={handleNew}
-          onHome={handleNew}
-          onDashboard={() => setView('builder')}
-        />
+        <Header onNew={handleNew} onHome={handleNew} onDashboard={() => setView('builder')} />
         <ProjectDashboard onOpen={handleOpenProject} onNew={handleNew} />
       </div>
     );
@@ -305,16 +387,14 @@ export default function App() {
         showActions
       />
 
-      {/* Builder tabs */}
+      {/* Builder toolbar */}
       <div className="flex items-center gap-1 px-4 py-1.5 border-b border-slate-800 bg-slate-950/50 overflow-x-auto scrollbar-thin">
         {BUILDER_TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'bg-slate-800 text-slate-100'
-                : 'text-slate-500 hover:text-slate-300'
+              activeTab === tab.id ? 'bg-slate-800 text-slate-100' : 'text-slate-500 hover:text-slate-300'
             }`}
           >
             {tab.icon}
@@ -323,54 +403,113 @@ export default function App() {
         ))}
         <div className="flex-1" />
         <button
+          onClick={() => setCommandOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
+        >
+          <CommandIcon className="w-3.5 h-3.5" />
+          Commands
+          <kbd className="text-[9px] border border-slate-700 rounded px-1">⌘K</kbd>
+        </button>
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
+        >
+          <SearchIcon className="w-3.5 h-3.5" />
+          Search
+        </button>
+        <button
+          onClick={() => setNotificationsOpen(true)}
+          className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
+        >
+          <Bell className="w-3.5 h-3.5" />
+          {incompleteRegions.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 text-[8px] text-white flex items-center justify-center font-bold">
+              {incompleteRegions.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
+        >
+          <SettingsIcon className="w-3.5 h-3.5" />
+        </button>
+        <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
         >
           <LayoutGrid className="w-3.5 h-3.5" />
-          {sidebarOpen ? 'Hide' : 'Show'} sidebar
+          {sidebarOpen ? 'Hide' : 'Show'}
         </button>
       </div>
 
+      {/* Sub-toolbar for design tab */}
+      {activeTab === 'design' && (
+        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
+          <SubToolbarBtn icon={<LayoutTemplate className="w-3 h-3" />} label="Screen Templates" onClick={() => setScreenTemplateOpen(true)} />
+          <SubToolbarBtn icon={<ImageIcon className="w-3 h-3" />} label="Assets" onClick={() => setAssetOpen(true)} />
+          <SubToolbarBtn icon={<Type className="w-3 h-3" />} label="Typography" onClick={() => setTypographyOpen(true)} />
+          <SubToolbarBtn icon={<Workflow className="w-3 h-3" />} label="Flow" onClick={() => setActiveTab('design')} />
+          <SubToolbarBtn icon={<MessageSquare className="w-3 h-3" />} label="Comments" onClick={() => setCommentsOpen(true)} />
+          <SubToolbarBtn icon={<Share2 className="w-3 h-3" />} label="Share" onClick={() => setShareOpen(true)} />
+          <div className="flex-1" />
+          <SubToolbarBtn icon={<ArrowRight className="w-3 h-3 rotate-180" />} label="Undo" onClick={undo} disabled={!canUndo} />
+          <SubToolbarBtn icon={<ArrowRight className="w-3 h-3" />} label="Redo" onClick={redo} disabled={!canRedo} />
+        </div>
+      )}
+
+      {/* Sub-toolbar for deploy tab */}
+      {activeTab === 'deploy' && (
+        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
+          <SubToolbarBtn icon={<Rocket className="w-3 h-3" />} label="Deploy" onClick={() => setDeployOpen(true)} />
+          <SubToolbarBtn icon={<Send className="w-3 h-3" />} label="Push Notification" onClick={() => setPushOpen(true)} />
+          <SubToolbarBtn icon={<Sparkles className="w-3 h-3" />} label="Onboarding" onClick={() => setOnboardingOpen(true)} />
+          <SubToolbarBtn icon={<Code2 className="w-3 h-3" />} label="API Explorer" onClick={() => setApiOpen(true)} />
+          <SubToolbarBtn icon={<Bug className="w-3 h-3" />} label="Error Monitor" onClick={() => setErrorOpen(true)} />
+          <SubToolbarBtn icon={<Share2 className="w-3 h-3" />} label="Share" onClick={() => setShareOpen(true)} />
+        </div>
+      )}
+
+      {/* Sub-toolbar for database tab */}
+      {activeTab === 'database' && (
+        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
+          <SubToolbarBtn icon={<DatabaseIcon className="w-3 h-3" />} label="Seed Data" onClick={() => setSeedOpen(true)} />
+          <SubToolbarBtn icon={<Code2 className="w-3 h-3" />} label="API Explorer" onClick={() => setApiOpen(true)} />
+        </div>
+      )}
+
       <div className="flex-1 flex overflow-hidden">
-        {/* Left sidebar: build pipeline */}
         {sidebarOpen && (
-          <div className="w-72 shrink-0 border-r border-slate-800 bg-slate-950/50 flex flex-col max-h-[calc(100vh-120px)] hidden lg:flex">
+          <div className="w-72 shrink-0 border-r border-slate-800 bg-slate-950/50 flex flex-col max-h-[calc(100vh-160px)] hidden lg:flex">
             <BuildStages stages={stages} activeLog={activeLog} />
           </div>
         )}
 
-        {/* Center: tab content */}
         <div className="flex-1 flex overflow-hidden min-w-0">
           {activeTab === 'design' && (
             <DesignTab
               regions={regions}
               colorScheme={colorScheme}
               appName={project?.name ?? 'My App'}
-              onRegionClick={handleRegionClick}
+              onRegionClick={setModalRegion}
               onColorChange={handleColorChange}
               onAddElement={handleAddElement}
+              onScreenFlow={() => {}}
+              showGrid={prefs.showGrid}
             />
           )}
           {activeTab === 'code' && (
-            <CodeViewer
-              regions={regions}
-              colorScheme={colorScheme}
-              appName={project?.name ?? 'My App'}
-            />
+            <CodeViewer regions={regions} colorScheme={colorScheme} appName={project?.name ?? 'My App'} />
           )}
-          {activeTab === 'database' && (
-            <DatabaseTab regions={regions} appName={project?.name ?? 'My App'} />
-          )}
-          {activeTab === 'test' && (
-            <TestPanel regions={regions} appName={project?.name ?? 'My App'} />
-          )}
+          {activeTab === 'database' && <DatabaseTab regions={regions} appName={project?.name ?? 'My App'} />}
+          {activeTab === 'test' && <TestPanel regions={regions} appName={project?.name ?? 'My App'} />}
           {activeTab === 'audit' && (
-            <AuditPanel
-              regions={regions}
-              colorScheme={colorScheme}
-              platform={project?.platform ?? 'both'}
-            />
+            <AuditPanel regions={regions} colorScheme={colorScheme} platform={project?.platform ?? 'both'} />
           )}
+          {activeTab === 'analytics' && (
+            <AnalyticsDashboard screenCount={regions.length} appName={project?.name ?? 'My App'} />
+          )}
+          {activeTab === 'performance' && <PerformanceProfiler screenCount={regions.length} />}
           {activeTab === 'deploy' && (
             <DeployTab
               regions={regions}
@@ -381,12 +520,16 @@ export default function App() {
               onExport={() => setExportOpen(true)}
               onStore={() => setStoreOpen(true)}
               onVersions={() => setVersionsOpen(true)}
+              onPush={() => setPushOpen(true)}
+              onOnboarding={() => setOnboardingOpen(true)}
+              onApi={() => setApiOpen(true)}
+              onShare={() => setShareOpen(true)}
+              onErrors={() => setErrorOpen(true)}
             />
           )}
         </div>
 
-        {/* Right sidebar: context panel */}
-        <div className="w-80 shrink-0 border-l border-slate-800 bg-slate-950/50 flex flex-col max-h-[calc(100vh-120px)] hidden xl:flex">
+        <div className="w-80 shrink-0 border-l border-slate-800 bg-slate-950/50 flex flex-col max-h-[calc(100vh-160px)] hidden xl:flex">
           <RightSidebar
             activeTab={activeTab}
             regions={regions}
@@ -403,87 +546,85 @@ export default function App() {
         </div>
       </div>
 
-      <RegionModal
-        region={modalRegion}
-        onClose={() => setModalRegion(null)}
-        onComplete={handleCompleteRegion}
-      />
-      <DeployDialog
-        open={deployOpen}
-        onClose={() => setDeployOpen(false)}
-        platform={project?.platform as Platform}
-        appName={project?.name ?? ''}
-        buildComplete={buildComplete}
-      />
-      <AppStoreAssets
-        open={storeOpen}
-        onClose={() => setStoreOpen(false)}
-        appName={project?.name ?? ''}
-        appType={project?.app_type ?? 'general'}
-        colorScheme={colorScheme}
-        regions={regions}
-      />
-      <VersionHistory
-        open={versionsOpen}
-        onClose={() => setVersionsOpen(false)}
-        appName={project?.name ?? ''}
-        screenCount={regions.length}
-      />
-      <ExportPanel
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        regions={regions}
-        colorScheme={colorScheme}
-        appName={project?.name ?? ''}
-      />
+      {/* All modals */}
+      <RegionModal region={modalRegion} onClose={() => setModalRegion(null)} onComplete={handleCompleteRegion} />
+      <DeployDialog open={deployOpen} onClose={() => setDeployOpen(false)} platform={project?.platform as Platform} appName={project?.name ?? ''} buildComplete={buildComplete} />
+      <AppStoreAssets open={storeOpen} onClose={() => setStoreOpen(false)} appName={project?.name ?? ''} appType={project?.app_type ?? 'general'} colorScheme={colorScheme} regions={regions} />
+      <VersionHistory open={versionsOpen} onClose={() => setVersionsOpen(false)} appName={project?.name ?? ''} screenCount={regions.length} />
+      <ExportPanel open={exportOpen} onClose={() => setExportOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''} />
+      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} commands={commands} />
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} regions={regions} onRegionSelect={setModalRegion} />
+      <AssetManager open={assetOpen} onClose={() => setAssetOpen(false)} />
+      <TypographyEditorModal open={typographyOpen} onClose={() => setTypographyOpen(false)} config={typography} onChange={setTypography} colorScheme={colorScheme} />
+      <ScreenTemplatePicker open={screenTemplateOpen} onClose={() => setScreenTemplateOpen(false)} onSelect={handleAddScreenFromTemplate} />
+      <PushComposer open={pushOpen} onClose={() => setPushOpen(false)} appName={project?.name ?? ''} />
+      <OnboardingBuilder open={onboardingOpen} onClose={() => setOnboardingOpen(false)} appName={project?.name ?? ''} />
+      <ApiExplorer open={apiOpen} onClose={() => setApiOpen(false)} appType={project?.app_type ?? 'general'} screenCount={regions.length} />
+      <SeedDataPanel open={seedOpen} onClose={() => setSeedOpen(false)} appType={project?.app_type ?? 'general'} />
+      <ErrorMonitor open={errorOpen} onClose={() => setErrorOpen(false)} screenCount={regions.length} />
+      <CommentsPanel open={commentsOpen} onClose={() => setCommentsOpen(false)} regions={regions} />
+      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} appName={project?.name ?? ''} />
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} prefs={prefs} onChange={setPrefs} />
+      <ShortcutsGuide open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} appName={project?.name ?? ''} />
+    </div>
+  );
+}
+
+function SubToolbarBtn({ icon, label, onClick, disabled }: { icon: React.ReactNode; label: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap"
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function TypographyEditorModal({ open, onClose, config, onChange, colorScheme }: {
+  open: boolean; onClose: () => void; config: TypographyConfig; onChange: (c: TypographyConfig) => void; colorScheme: ColorScheme;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl animate-fade-in-up max-h-[85vh] overflow-y-auto scrollbar-thin">
+        <TypographyEditor config={config} onChange={onChange} colorScheme={colorScheme} />
+      </div>
     </div>
   );
 }
 
 function DesignTab({
-  regions,
-  colorScheme,
-  appName,
-  onRegionClick,
-  onColorChange,
-  onAddElement,
+  regions, colorScheme, appName, onRegionClick, onColorChange, onAddElement, onScreenFlow, showGrid,
 }: {
-  regions: AppRegion[];
-  colorScheme: ColorScheme;
-  appName: string;
-  onRegionClick: (r: AppRegion) => void;
-  onColorChange: (cs: ColorScheme) => void;
-  onAddElement: (regionId: string, el: import('@/types/builder').ScreenElement) => void;
+  regions: AppRegion[]; colorScheme: ColorScheme; appName: string;
+  onRegionClick: (r: AppRegion) => void; onColorChange: (cs: ColorScheme) => void;
+  onAddElement: (regionId: string, el: ScreenElement) => void; onScreenFlow: () => void; showGrid: boolean;
 }) {
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const selectedRegion = regions.find((r) => r.id === selectedRegionId) ?? regions[0];
 
   return (
     <div className="flex flex-1 overflow-hidden">
-      {/* Component library */}
       <div className="w-56 shrink-0 border-r border-slate-800 bg-slate-950/30">
-        <ComponentLibrary
-          onAdd={(el) => selectedRegion && onAddElement(selectedRegion.id, el)}
-        />
+        <ComponentLibrary onAdd={(el) => selectedRegion && onAddElement(selectedRegion.id, el)} />
       </div>
 
-      {/* Phone preview */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-4 min-h-[400px] relative overflow-hidden">
+      <div className={`flex-1 flex flex-col items-center justify-center p-4 min-h-[400px] relative overflow-hidden ${showGrid ? 'bg-grid-pattern' : ''}`}
+        style={{ background: showGrid ? undefined : 'linear-gradient(to bottom, #0f172a, #020617)' }}>
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl" />
           <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl" />
         </div>
         <div className="relative z-10 w-full flex items-center justify-center">
-          <PhonePreview
-            regions={regions}
-            colorScheme={colorScheme}
-            appName={appName}
-            onRegionClick={onRegionClick}
-          />
+          <PhonePreview regions={regions} colorScheme={colorScheme} appName={appName} onRegionClick={onRegionClick} />
         </div>
       </div>
 
-      {/* Theme editor + screen flow */}
       <div className="w-64 shrink-0 border-l border-slate-800 bg-slate-950/30 overflow-y-auto scrollbar-thin">
         <div className="border-b border-slate-800">
           <div className="px-4 pt-3 pb-2">
@@ -493,9 +634,7 @@ function DesignTab({
               onChange={(e) => setSelectedRegionId(e.target.value)}
               className="w-full rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 px-2 py-1.5 focus:outline-none"
             >
-              {regions.map((r) => (
-                <option key={r.id} value={r.id}>{r.region_name}</option>
-              ))}
+              {regions.map((r) => (<option key={r.id} value={r.id}>{r.region_name}</option>))}
             </select>
           </div>
         </div>
@@ -536,7 +675,6 @@ function DatabaseTab({ regions, appName }: { regions: AppRegion[]; appName: stri
           </div>
         ))}
       </div>
-
       <div className="mt-6">
         <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-2">Generated SQL</h4>
         <div className="rounded-xl border border-slate-800 bg-[#0d1117] p-4 overflow-auto scrollbar-thin">
@@ -548,82 +686,37 @@ function DatabaseTab({ regions, appName }: { regions: AppRegion[]; appName: stri
 }
 
 function DeployTab({
-  regions,
-  stages,
-  buildComplete,
-  incompleteCount,
-  onDeploy,
-  onExport,
-  onStore,
-  onVersions,
+  regions, stages, buildComplete, incompleteCount,
+  onDeploy, onExport, onStore, onVersions, onPush, onOnboarding, onApi, onShare, onErrors,
 }: {
-  regions: AppRegion[];
-  stages: BuildStage[];
-  buildComplete: boolean;
-  incompleteCount: number;
-  onDeploy: () => void;
-  onExport: () => void;
-  onStore: () => void;
-  onVersions: () => void;
+  regions: AppRegion[]; stages: BuildStage[]; buildComplete: boolean; incompleteCount: number;
+  onDeploy: () => void; onExport: () => void; onStore: () => void; onVersions: () => void;
+  onPush: () => void; onOnboarding: () => void; onApi: () => void; onShare: () => void; onErrors: () => void;
 }) {
   return (
     <div className="flex-1 overflow-y-auto scrollbar-thin p-6 bg-slate-950/30">
       <div className="max-w-2xl mx-auto space-y-4">
         <div className="flex items-center gap-2 mb-2">
           <DeployIcon className="w-4 h-4 text-emerald-400" />
-          <h3 className="text-sm font-semibold text-slate-200">Deployment</h3>
+          <h3 className="text-sm font-semibold text-slate-200">Deployment & Distribution</h3>
         </div>
 
-        <DeployCard
-          title="Deploy to Cloud"
-          description="Build and deploy your app to preview, staging, or production."
-          icon={<Rocket className="w-5 h-5" />}
-          onClick={onDeploy}
-          disabled={!buildComplete && incompleteCount > 0}
-          status={buildComplete ? 'Ready' : `${incompleteCount} pending`}
-        />
-
-        <DeployCard
-          title="Export Code"
-          description="Download source code for React Native, Flutter, Swift, Kotlin, or Web."
-          icon={<Code2 className="w-5 h-5" />}
-          onClick={onExport}
-          status="5 targets"
-        />
-
-        <DeployCard
-          title="App Store Assets"
-          description="Generate app icon, screenshots, description, and keywords for store listing."
-          icon={<Store className="w-5 h-5" />}
-          onClick={onStore}
-          status="Auto-generated"
-        />
-
-        <DeployCard
-          title="Version History"
-          description="View change log and version timeline of your project."
-          icon={<GitBranch className="w-5 h-5" />}
-          onClick={onVersions}
-          status="7 versions"
-        />
+        <DeployCard title="Deploy to Cloud" description="Build and deploy to preview, staging, or production." icon={<Rocket className="w-5 h-5" />} onClick={onDeploy} disabled={!buildComplete && incompleteCount > 0} status={buildComplete ? 'Ready' : `${incompleteCount} pending`} />
+        <DeployCard title="Export Code" description="Download source code for 5 platforms." icon={<Code2 className="w-5 h-5" />} onClick={onExport} status="5 targets" />
+        <DeployCard title="App Store Assets" description="Generate icon, screenshots, description, and keywords." icon={<Store className="w-5 h-5" />} onClick={onStore} status="Auto-generated" />
+        <DeployCard title="Push Notifications" description="Compose and send push notifications to users." icon={<Send className="w-5 h-5" />} onClick={onPush} status="Ready" />
+        <DeployCard title="Onboarding Builder" description="Design a welcome flow for new users." icon={<Sparkles className="w-5 h-5" />} onClick={onOnboarding} status="3 steps" />
+        <DeployCard title="API Explorer" description="Browse and test REST API endpoints." icon={<Code2 className="w-5 h-5" />} onClick={onApi} status="10+ endpoints" />
+        <DeployCard title="Share Preview" description="Generate a public link to share your app." icon={<Share2 className="w-5 h-5" />} onClick={onShare} status="Copy link" />
+        <DeployCard title="Error Monitor" description="Track crashes and runtime errors." icon={<Bug className="w-5 h-5" />} onClick={onErrors} status={`${incompleteCount} issues`} />
+        <DeployCard title="Version History" description="View change log and version timeline." icon={<GitBranch className="w-5 h-5" />} onClick={onVersions} status="7 versions" />
 
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
           <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-3">Build Summary</h4>
           <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="text-2xl font-bold text-slate-100">{regions.length}</p>
-              <p className="text-xs text-slate-500">Screens</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-100">{stages.length}</p>
-              <p className="text-xs text-slate-500">Build Steps</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-emerald-400">
-                {stages.filter((s) => s.status === 'completed').length}
-              </p>
-              <p className="text-xs text-slate-500">Completed</p>
-            </div>
+            <div><p className="text-2xl font-bold text-slate-100">{regions.length}</p><p className="text-xs text-slate-500">Screens</p></div>
+            <div><p className="text-2xl font-bold text-slate-100">{stages.length}</p><p className="text-xs text-slate-500">Build Steps</p></div>
+            <div><p className="text-2xl font-bold text-emerald-400">{stages.filter((s) => s.status === 'completed').length}</p><p className="text-xs text-slate-500">Completed</p></div>
           </div>
         </div>
       </div>
@@ -631,205 +724,70 @@ function DeployTab({
   );
 }
 
-function DeployCard({
-  title,
-  description,
-  icon,
-  onClick,
-  disabled,
-  status,
-}: {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  status: string;
+function DeployCard({ title, description, icon, onClick, disabled, status }: {
+  title: string; description: string; icon: React.ReactNode; onClick: () => void; disabled?: boolean; status: string;
 }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="w-full flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 text-left hover:border-slate-700 hover:bg-slate-900/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed group animate-fade-in-up"
-    >
-      <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 transition-colors shrink-0">
-        {icon}
-      </div>
-      <div className="flex-1">
-        <h4 className="text-sm font-semibold text-slate-200">{title}</h4>
-        <p className="text-xs text-slate-500 mt-0.5">{description}</p>
-      </div>
-      <div className="text-right shrink-0">
-        <span className="text-xs text-slate-400">{status}</span>
-        <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-slate-300 group-hover:translate-x-0.5 transition-all mt-1" />
-      </div>
+    <button onClick={onClick} disabled={disabled}
+      className="w-full flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 text-left hover:border-slate-700 hover:bg-slate-900/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed group animate-fade-in-up">
+      <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 transition-colors shrink-0">{icon}</div>
+      <div className="flex-1"><h4 className="text-sm font-semibold text-slate-200">{title}</h4><p className="text-xs text-slate-500 mt-0.5">{description}</p></div>
+      <div className="text-right shrink-0"><span className="text-xs text-slate-400">{status}</span><ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-slate-300 group-hover:translate-x-0.5 transition-all mt-1" /></div>
     </button>
   );
 }
 
-function RightSidebar({
-  activeTab,
-  regions,
-  stages,
-  colorScheme,
-  platform,
-  appName,
-  appType,
-  isBuilding,
-  buildComplete,
-  incompleteCount,
-  onDeploy,
-}: {
-  activeTab: BuilderTab;
-  regions: AppRegion[];
-  stages: BuildStage[];
-  colorScheme: ColorScheme;
-  platform: Platform;
-  appName: string;
-  appType: string;
-  isBuilding: boolean;
-  buildComplete: boolean;
-  incompleteCount: number;
-  onDeploy: () => void;
+function RightSidebar({ activeTab, regions, stages, colorScheme, platform, appName, appType, isBuilding, buildComplete, incompleteCount, onDeploy }: {
+  activeTab: BuilderTab; regions: AppRegion[]; stages: BuildStage[]; colorScheme: ColorScheme; platform: Platform;
+  appName: string; appType: string; isBuilding: boolean; buildComplete: boolean; incompleteCount: number; onDeploy: () => void;
 }) {
-  if (activeTab === 'audit') {
-    return <BuildMetrics regions={regions} stages={stages} />;
-  }
-  if (activeTab === 'deploy') {
-    return (
-      <div className="p-4 space-y-3">
-        <BuildStatusPanel
-          isBuilding={isBuilding}
-          buildComplete={buildComplete}
-          incompleteCount={incompleteCount}
-          platform={platform}
-          appName={appName}
-          onDeploy={onDeploy}
-        />
-      </div>
-    );
-  }
-  return (
-    <AIChat appName={appName} appType={appType} screenCount={regions.length} />
+  if (activeTab === 'audit') return <BuildMetrics regions={regions} stages={stages} />;
+  if (activeTab === 'deploy') return (
+    <div className="p-4 space-y-3">
+      <BuildStatusPanel isBuilding={isBuilding} buildComplete={buildComplete} incompleteCount={incompleteCount} platform={platform} appName={appName} onDeploy={onDeploy} />
+      <ActivityLog appName={appName} />
+    </div>
   );
+  if (activeTab === 'analytics' || activeTab === 'performance') return <ActivityLog appName={appName} />;
+  return <AIChat appName={appName} appType={appType} screenCount={regions.length} />;
 }
 
-function BuildStatusPanel({
-  isBuilding,
-  buildComplete,
-  incompleteCount,
-  platform,
-  appName,
-  onDeploy,
-}: {
-  isBuilding: boolean;
-  buildComplete: boolean;
-  incompleteCount: number;
-  platform: Platform;
-  appName: string;
-  onDeploy: () => void;
+function BuildStatusPanel({ isBuilding, buildComplete, incompleteCount, platform, appName, onDeploy }: {
+  isBuilding: boolean; buildComplete: boolean; incompleteCount: number; platform: Platform; appName: string; onDeploy: () => void;
 }) {
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-xs uppercase tracking-wider text-slate-500 mb-2">Status</h3>
-        {isBuilding ? (
-          <div className="flex items-center gap-2 text-sm text-cyan-400">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Building...
-          </div>
-        ) : buildComplete ? (
-          <div className="flex items-center gap-2 text-sm text-emerald-400">
-            <CheckCircle2 className="w-4 h-4" />
-            Build complete
-          </div>
-        ) : (
-          <div className="text-sm text-slate-500">Idle</div>
-        )}
+        {isBuilding ? <div className="flex items-center gap-2 text-sm text-cyan-400"><Loader2 className="w-4 h-4 animate-spin" />Building...</div>
+        : buildComplete ? <div className="flex items-center gap-2 text-sm text-emerald-400"><CheckCircle2 className="w-4 h-4" />Build complete</div>
+        : <div className="text-sm text-slate-500">Idle</div>}
       </div>
-
       <div className="rounded-xl bg-slate-900 border border-slate-800 p-3 space-y-2">
-        <div className="flex justify-between text-xs">
-          <span className="text-slate-500">App name</span>
-          <span className="text-slate-300 font-medium">{appName}</span>
-        </div>
-        <div className="flex justify-between text-xs">
-          <span className="text-slate-500">Platform</span>
-          <span className="text-slate-300 font-medium">{platformLabel(platform)}</span>
-        </div>
+        <div className="flex justify-between text-xs"><span className="text-slate-500">App name</span><span className="text-slate-300 font-medium">{appName}</span></div>
+        <div className="flex justify-between text-xs"><span className="text-slate-500">Platform</span><span className="text-slate-300 font-medium">{platformLabel(platform)}</span></div>
       </div>
-
       {buildComplete && (
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Rocket className="w-4 h-4 text-emerald-400" />
-            <h4 className="text-sm font-semibold text-slate-200">Ready to deploy</h4>
-          </div>
-          <p className="text-xs text-slate-500 mb-3">
-            Your app has been built successfully. Tap incomplete regions to finish them.
-          </p>
-          {incompleteCount > 0 && (
-            <div className="flex items-center gap-2 text-xs text-amber-400 mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
-              {incompleteCount} region{incompleteCount > 1 ? 's' : ''} need completion
-            </div>
-          )}
-          <button
-            onClick={onDeploy}
-            disabled={incompleteCount > 0}
-            className="w-full rounded-lg py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 text-sm font-semibold transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50"
-          >
-            {incompleteCount > 0 ? 'Complete all regions first' : 'Deploy to store'}
-          </button>
+          <div className="flex items-center gap-2 mb-2"><Rocket className="w-4 h-4 text-emerald-400" /><h4 className="text-sm font-semibold text-slate-200">Ready to deploy</h4></div>
+          <p className="text-xs text-slate-500 mb-3">Your app has been built successfully. Tap incomplete regions to finish them.</p>
+          {incompleteCount > 0 && <div className="flex items-center gap-2 text-xs text-amber-400 mb-3"><Sparkles className="w-3.5 h-3.5" />{incompleteCount} region{incompleteCount > 1 ? 's' : ''} need completion</div>}
+          <button onClick={onDeploy} disabled={incompleteCount > 0} className="w-full rounded-lg py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 text-sm font-semibold transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50">{incompleteCount > 0 ? 'Complete all regions first' : 'Deploy to store'}</button>
         </div>
       )}
-
-      <div className="text-xs text-slate-600 text-center pt-2">
-        {incompleteCount > 0
-          ? 'Tap highlighted regions in the preview to complete them'
-          : 'All regions complete'}
-      </div>
     </div>
   );
 }
 
 function generateSchema(regions: AppRegion[], appName: string) {
   const tables: { name: string; columns: { name: string; type: string; isPrimary?: boolean; isForeign?: boolean }[] }[] = [
-    {
-      name: 'users',
-      columns: [
-        { name: 'id', type: 'uuid', isPrimary: true },
-        { name: 'email', type: 'text' },
-        { name: 'name', type: 'text' },
-        { name: 'created_at', type: 'timestamptz' },
-      ],
-    },
-    {
-      name: appName.toLowerCase().replace(/\s+/g, '_') + '_data',
-      columns: [
-        { name: 'id', type: 'uuid', isPrimary: true },
-        { name: 'user_id', type: 'uuid', isForeign: true },
-        { name: 'title', type: 'text' },
-        { name: 'status', type: 'text' },
-        { name: 'created_at', type: 'timestamptz' },
-      ],
-    },
+    { name: 'users', columns: [{ name: 'id', type: 'uuid', isPrimary: true }, { name: 'email', type: 'text' }, { name: 'name', type: 'text' }, { name: 'created_at', type: 'timestamptz' }] },
+    { name: appName.toLowerCase().replace(/\s+/g, '_') + '_data', columns: [{ name: 'id', type: 'uuid', isPrimary: true }, { name: 'user_id', type: 'uuid', isForeign: true }, { name: 'title', type: 'text' }, { name: 'status', type: 'text' }, { name: 'created_at', type: 'timestamptz' }] },
   ];
-  const hasAuth = regions.some((r) => r.region_type === 'auth');
-  if (!hasAuth) tables.shift();
+  if (!regions.some((r) => r.region_type === 'auth')) tables.shift();
   return tables;
 }
 
 function generateSQL(tables: { name: string; columns: { name: string; type: string; isPrimary?: boolean; isForeign?: boolean }[] }[]): string {
-  return tables
-    .map(
-      (t) =>
-        `CREATE TABLE ${t.name} (\n${t.columns
-          .map(
-            (c) =>
-              `  ${c.name} ${c.type}${c.isPrimary ? ' PRIMARY KEY DEFAULT gen_random_uuid()' : ''}${c.isForeign ? ` REFERENCES ${t.name === 'users' ? 'profiles' : 'users'}(id)` : ''}`,
-          )
-          .join(',\n')}\n);`,
-    )
-    .join('\n\n');
+  return tables.map((t) => `CREATE TABLE ${t.name} (\n${t.columns.map((c) => `  ${c.name} ${c.type}${c.isPrimary ? ' PRIMARY KEY DEFAULT gen_random_uuid()' : ''}${c.isForeign ? ` REFERENCES ${t.name === 'users' ? 'profiles' : 'users'}(id)` : ''}`).join(',\n')}\n);`).join('\n\n');
 }
