@@ -89,6 +89,27 @@ import ActivityLog from '@/components/ActivityLog';
 import NotificationCenter from '@/components/NotificationCenter';
 import { useHistory } from '@/lib/useHistory';
 import type { ScreenTemplateDef } from '@/lib/screenTemplates';
+import ABTestingPanel from '@/components/ABTestingPanel';
+import LocalizationEditor from '@/components/LocalizationEditor';
+import FeatureFlagsManager from '@/components/FeatureFlagsManager';
+import CIPipelineVisualizer from '@/components/CIPipelineVisualizer';
+import UserJourneyMapper from '@/components/UserJourneyMapper';
+import FormBuilder from '@/components/FormBuilder';
+import NavigationGraph from '@/components/NavigationGraph';
+import WebhookManager from '@/components/WebhookManager';
+import ScheduledTasks from '@/components/ScheduledTasks';
+import DataExplorer from '@/components/DataExplorer';
+import ComponentInspector from '@/components/ComponentInspector';
+import DesignTokensManager from '@/components/DesignTokensManager';
+import AccessibilityChecker from '@/components/AccessibilityChecker';
+import TeamPanel from '@/components/TeamPanel';
+import ReleaseNotesGenerator from '@/components/ReleaseNotesGenerator';
+import DeepLinkConfigurator from '@/components/DeepLinkConfigurator';
+import EnvVarsManager from '@/components/EnvVarsManager';
+import DevicePreviewSwitcher from '@/components/DevicePreviewSwitcher';
+import AnalyticsEvents from '@/components/AnalyticsEvents';
+import SecurityScanner from '@/components/SecurityScanner';
+import { Target, ShieldCheck, FlaskConical, Globe, Flag, GitBranch as GitBranchIcon, Route, FormInput, Network, Webhook, Clock, Database as DbIconExplore, SlidersHorizontal, Accessibility as A11yIcon, Users, FileText, Link2, KeyRound, Monitor } from 'lucide-react';
 
 type View = 'prompt' | 'builder' | 'dashboard';
 
@@ -158,6 +179,26 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [abTestingOpen, setAbTestingOpen] = useState(false);
+  const [localizationOpen, setLocalizationOpen] = useState(false);
+  const [featureFlagsOpen, setFeatureFlagsOpen] = useState(false);
+  const [ciPipelineOpen, setCIPipelineOpen] = useState(false);
+  const [journeyOpen, setJourneyOpen] = useState(false);
+  const [formBuilderOpen, setFormBuilderOpen] = useState(false);
+  const [navGraphOpen, setNavGraphOpen] = useState(false);
+  const [webhookOpen, setWebhookOpen] = useState(false);
+  const [scheduledOpen, setScheduledOpen] = useState(false);
+  const [dataExplorerOpen, setDataExplorerOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [designTokensOpen, setDesignTokensOpen] = useState(false);
+  const [a11yOpen, setA11yOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(false);
+  const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
+  const [deepLinkOpen, setDeepLinkOpen] = useState(false);
+  const [envVarsOpen, setEnvVarsOpen] = useState(false);
+  const [devicePreviewOpen, setDevicePreviewOpen] = useState(false);
+  const [analyticsEventsOpen, setAnalyticsEventsOpen] = useState(false);
+  const [securityOpen, setSecurityOpen] = useState(false);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const buildTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -356,6 +397,26 @@ export default function App() {
     { id: 'shortcuts', label: 'Keyboard shortcuts', shortcut: '?', icon: <Keyboard className="w-4 h-4" />, section: 'Settings', action: () => setShortcutsOpen(true) },
     { id: 'undo', label: 'Undo', shortcut: '⌘Z', icon: <ArrowRight className="w-4 h-4 rotate-180" />, section: 'Editing', action: undo },
     { id: 'redo', label: 'Redo', shortcut: '⌘⇧Z', icon: <ArrowRight className="w-4 h-4" />, section: 'Editing', action: redo },
+    { id: 'ab-testing', label: 'A/B Testing', icon: <FlaskConical className="w-4 h-4" />, section: 'Testing', action: () => setAbTestingOpen(true) },
+    { id: 'localization', label: 'Localization Editor', icon: <Globe className="w-4 h-4" />, section: 'Content', action: () => setLocalizationOpen(true) },
+    { id: 'feature-flags', label: 'Feature Flags', icon: <Flag className="w-4 h-4" />, section: 'Backend', action: () => setFeatureFlagsOpen(true) },
+    { id: 'ci-pipeline', label: 'CI/CD Pipeline', icon: <GitBranchIcon className="w-4 h-4" />, section: 'DevOps', action: () => setCIPipelineOpen(true) },
+    { id: 'journey', label: 'User Journey Mapper', icon: <Route className="w-4 h-4" />, section: 'Analytics', action: () => setJourneyOpen(true) },
+    { id: 'form-builder', label: 'Form Builder', icon: <FormInput className="w-4 h-4" />, section: 'Design', action: () => setFormBuilderOpen(true) },
+    { id: 'nav-graph', label: 'Navigation Graph', icon: <Network className="w-4 h-4" />, section: 'Design', action: () => setNavGraphOpen(true) },
+    { id: 'webhooks', label: 'Webhook Manager', icon: <Webhook className="w-4 h-4" />, section: 'Backend', action: () => setWebhookOpen(true) },
+    { id: 'scheduled', label: 'Scheduled Tasks', icon: <Clock className="w-4 h-4" />, section: 'Backend', action: () => setScheduledOpen(true) },
+    { id: 'data-explorer', label: 'Data Explorer', icon: <DbIconExplore className="w-4 h-4" />, section: 'Backend', action: () => setDataExplorerOpen(true) },
+    { id: 'inspector', label: 'Component Inspector', icon: <SlidersHorizontal className="w-4 h-4" />, section: 'Design', action: () => setInspectorOpen(true) },
+    { id: 'design-tokens', label: 'Design Tokens', icon: <Palette className="w-4 h-4" />, section: 'Design', action: () => setDesignTokensOpen(true) },
+    { id: 'a11y', label: 'Accessibility Checker', icon: <A11yIcon className="w-4 h-4" />, section: 'Quality', action: () => setA11yOpen(true) },
+    { id: 'team', label: 'Team Management', icon: <Users className="w-4 h-4" />, section: 'Collaboration', action: () => setTeamOpen(true) },
+    { id: 'release-notes', label: 'Release Notes', icon: <FileText className="w-4 h-4" />, section: 'Deploy', action: () => setReleaseNotesOpen(true) },
+    { id: 'deep-links', label: 'Deep Link Configurator', icon: <Link2 className="w-4 h-4" />, section: 'Deploy', action: () => setDeepLinkOpen(true) },
+    { id: 'env-vars', label: 'Environment Variables', icon: <KeyRound className="w-4 h-4" />, section: 'DevOps', action: () => setEnvVarsOpen(true) },
+    { id: 'device-preview', label: 'Device Preview Switcher', icon: <Monitor className="w-4 h-4" />, section: 'Design', action: () => setDevicePreviewOpen(true) },
+    { id: 'analytics-events', label: 'Analytics Events & Funnels', icon: <Target className="w-4 h-4" />, section: 'Analytics', action: () => setAnalyticsEventsOpen(true) },
+    { id: 'security', label: 'Security Scanner', icon: <ShieldCheck className="w-4 h-4" />, section: 'Quality', action: () => setSecurityOpen(true) },
   ];
 
   if (view === 'prompt') {
@@ -449,9 +510,14 @@ export default function App() {
           <SubToolbarBtn icon={<LayoutTemplate className="w-3 h-3" />} label="Screen Templates" onClick={() => setScreenTemplateOpen(true)} />
           <SubToolbarBtn icon={<ImageIcon className="w-3 h-3" />} label="Assets" onClick={() => setAssetOpen(true)} />
           <SubToolbarBtn icon={<Type className="w-3 h-3" />} label="Typography" onClick={() => setTypographyOpen(true)} />
-          <SubToolbarBtn icon={<Workflow className="w-3 h-3" />} label="Flow" onClick={() => setActiveTab('design')} />
+          <SubToolbarBtn icon={<Workflow className="w-3 h-3" />} label="Flow" onClick={() => setNavGraphOpen(true)} />
           <SubToolbarBtn icon={<MessageSquare className="w-3 h-3" />} label="Comments" onClick={() => setCommentsOpen(true)} />
           <SubToolbarBtn icon={<Share2 className="w-3 h-3" />} label="Share" onClick={() => setShareOpen(true)} />
+          <SubToolbarBtn icon={<Monitor className="w-3 h-3" />} label="Devices" onClick={() => setDevicePreviewOpen(true)} />
+          <SubToolbarBtn icon={<SlidersHorizontal className="w-3 h-3" />} label="Inspector" onClick={() => setInspectorOpen(true)} />
+          <SubToolbarBtn icon={<Palette className="w-3 h-3" />} label="Tokens" onClick={() => setDesignTokensOpen(true)} />
+          <SubToolbarBtn icon={<A11yIcon className="w-3 h-3" />} label="A11y" onClick={() => setA11yOpen(true)} />
+          <SubToolbarBtn icon={<FormInput className="w-3 h-3" />} label="Forms" onClick={() => setFormBuilderOpen(true)} />
           <div className="flex-1" />
           <SubToolbarBtn icon={<ArrowRight className="w-3 h-3 rotate-180" />} label="Undo" onClick={undo} disabled={!canUndo} />
           <SubToolbarBtn icon={<ArrowRight className="w-3 h-3" />} label="Redo" onClick={redo} disabled={!canRedo} />
@@ -462,11 +528,18 @@ export default function App() {
       {activeTab === 'deploy' && (
         <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
           <SubToolbarBtn icon={<Rocket className="w-3 h-3" />} label="Deploy" onClick={() => setDeployOpen(true)} />
-          <SubToolbarBtn icon={<Send className="w-3 h-3" />} label="Push Notification" onClick={() => setPushOpen(true)} />
+          <SubToolbarBtn icon={<Send className="w-3 h-3" />} label="Push" onClick={() => setPushOpen(true)} />
           <SubToolbarBtn icon={<Sparkles className="w-3 h-3" />} label="Onboarding" onClick={() => setOnboardingOpen(true)} />
-          <SubToolbarBtn icon={<Code2 className="w-3 h-3" />} label="API Explorer" onClick={() => setApiOpen(true)} />
-          <SubToolbarBtn icon={<Bug className="w-3 h-3" />} label="Error Monitor" onClick={() => setErrorOpen(true)} />
+          <SubToolbarBtn icon={<Code2 className="w-3 h-3" />} label="API" onClick={() => setApiOpen(true)} />
+          <SubToolbarBtn icon={<Bug className="w-3 h-3" />} label="Errors" onClick={() => setErrorOpen(true)} />
           <SubToolbarBtn icon={<Share2 className="w-3 h-3" />} label="Share" onClick={() => setShareOpen(true)} />
+          <SubToolbarBtn icon={<FlaskConical className="w-3 h-3" />} label="A/B Test" onClick={() => setAbTestingOpen(true)} />
+          <SubToolbarBtn icon={<FileText className="w-3 h-3" />} label="Release Notes" onClick={() => setReleaseNotesOpen(true)} />
+          <SubToolbarBtn icon={<Link2 className="w-3 h-3" />} label="Deep Links" onClick={() => setDeepLinkOpen(true)} />
+          <SubToolbarBtn icon={<Flag className="w-3 h-3" />} label="Flags" onClick={() => setFeatureFlagsOpen(true)} />
+          <SubToolbarBtn icon={<GitBranchIcon className="w-3 h-3" />} label="CI/CD" onClick={() => setCIPipelineOpen(true)} />
+          <SubToolbarBtn icon={<ShieldCheck className="w-3 h-3" />} label="Security" onClick={() => setSecurityOpen(true)} />
+          <SubToolbarBtn icon={<Users className="w-3 h-3" />} label="Team" onClick={() => setTeamOpen(true)} />
         </div>
       )}
 
@@ -474,7 +547,11 @@ export default function App() {
       {activeTab === 'database' && (
         <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
           <SubToolbarBtn icon={<DatabaseIcon className="w-3 h-3" />} label="Seed Data" onClick={() => setSeedOpen(true)} />
-          <SubToolbarBtn icon={<Code2 className="w-3 h-3" />} label="API Explorer" onClick={() => setApiOpen(true)} />
+          <SubToolbarBtn icon={<Code2 className="w-3 h-3" />} label="API" onClick={() => setApiOpen(true)} />
+          <SubToolbarBtn icon={<DbIconExplore className="w-3 h-3" />} label="Data Explorer" onClick={() => setDataExplorerOpen(true)} />
+          <SubToolbarBtn icon={<Webhook className="w-3 h-3" />} label="Webhooks" onClick={() => setWebhookOpen(true)} />
+          <SubToolbarBtn icon={<Clock className="w-3 h-3" />} label="Cron Jobs" onClick={() => setScheduledOpen(true)} />
+          <SubToolbarBtn icon={<KeyRound className="w-3 h-3" />} label="Env Vars" onClick={() => setEnvVarsOpen(true)} />
         </div>
       )}
 
@@ -567,6 +644,26 @@ export default function App() {
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} prefs={prefs} onChange={setPrefs} />
       <ShortcutsGuide open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} appName={project?.name ?? ''} />
+      <ABTestingPanel open={abTestingOpen} onClose={() => setAbTestingOpen(false)} />
+      <LocalizationEditor open={localizationOpen} onClose={() => setLocalizationOpen(false)} />
+      <FeatureFlagsManager open={featureFlagsOpen} onClose={() => setFeatureFlagsOpen(false)} />
+      <CIPipelineVisualizer open={ciPipelineOpen} onClose={() => setCIPipelineOpen(false)} />
+      <UserJourneyMapper open={journeyOpen} onClose={() => setJourneyOpen(false)} regions={regions} />
+      <FormBuilder open={formBuilderOpen} onClose={() => setFormBuilderOpen(false)} />
+      <NavigationGraph open={navGraphOpen} onClose={() => setNavGraphOpen(false)} regions={regions} />
+      <WebhookManager open={webhookOpen} onClose={() => setWebhookOpen(false)} />
+      <ScheduledTasks open={scheduledOpen} onClose={() => setScheduledOpen(false)} />
+      <DataExplorer open={dataExplorerOpen} onClose={() => setDataExplorerOpen(false)} />
+      <ComponentInspector open={inspectorOpen} onClose={() => setInspectorOpen(false)} regions={regions} />
+      <DesignTokensManager open={designTokensOpen} onClose={() => setDesignTokensOpen(false)} colorScheme={colorScheme} />
+      <AccessibilityChecker open={a11yOpen} onClose={() => setA11yOpen(false)} regions={regions} colorScheme={colorScheme} />
+      <TeamPanel open={teamOpen} onClose={() => setTeamOpen(false)} />
+      <ReleaseNotesGenerator open={releaseNotesOpen} onClose={() => setReleaseNotesOpen(false)} appName={project?.name ?? ''} regions={regions} version="1.0.0" />
+      <DeepLinkConfigurator open={deepLinkOpen} onClose={() => setDeepLinkOpen(false)} appName={project?.name ?? ''} regions={regions} />
+      <EnvVarsManager open={envVarsOpen} onClose={() => setEnvVarsOpen(false)} />
+      <DevicePreviewSwitcher open={devicePreviewOpen} onClose={() => setDevicePreviewOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''} />
+      <AnalyticsEvents open={analyticsEventsOpen} onClose={() => setAnalyticsEventsOpen(false)} />
+      <SecurityScanner open={securityOpen} onClose={() => setSecurityOpen(false)} />
     </div>
   );
 }
