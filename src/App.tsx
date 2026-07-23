@@ -109,7 +109,27 @@ import EnvVarsManager from '@/components/EnvVarsManager';
 import DevicePreviewSwitcher from '@/components/DevicePreviewSwitcher';
 import AnalyticsEvents from '@/components/AnalyticsEvents';
 import SecurityScanner from '@/components/SecurityScanner';
-import { Target, ShieldCheck, FlaskConical, Globe, Flag, GitBranch as GitBranchIcon, Route, FormInput, Network, Webhook, Clock, Database as DbIconExplore, SlidersHorizontal, Accessibility as A11yIcon, Users, FileText, Link2, KeyRound, Monitor } from 'lucide-react';
+import DatabaseMigrationManager from '@/components/DatabaseMigrationManager';
+import EmailTemplateEditor from '@/components/EmailTemplateEditor';
+import StorageManager from '@/components/StorageManager';
+import LogViewer from '@/components/LogViewer';
+import HealthCheckDashboard from '@/components/HealthCheckDashboard';
+import BackupManager from '@/components/BackupManager';
+import AuditTrailPanel from '@/components/AuditTrailPanel';
+import CustomDomainConfig from '@/components/CustomDomainConfig';
+import OAuthProvidersConfig from '@/components/OAuthProvidersConfig';
+import RateLimitConfig from '@/components/RateLimitConfig';
+import CacheManager from '@/components/CacheManager';
+import DependencyManager from '@/components/DependencyManager';
+import AppConfigEditor from '@/components/AppConfigEditor';
+import BulkActionsPanel from '@/components/BulkActionsPanel';
+import CodeDiffViewer from '@/components/CodeDiffViewer';
+import APIKeyManager from '@/components/APIKeyManager';
+import SMSConfig from '@/components/SMSConfig';
+import WebhookTester from '@/components/WebhookTester';
+import IntegrationMarketplace from '@/components/IntegrationMarketplace';
+import ProjectSettings from '@/components/ProjectSettings';
+import { Target, ShieldCheck, FlaskConical, Globe, Flag, GitBranch as GitBranchIcon, Route, FormInput, Network, Webhook, Clock, Database as DbIconExplore, SlidersHorizontal, Accessibility as A11yIcon, Users, FileText, Link2, KeyRound, Monitor, HardDrive, Mail, Terminal, HeartPulse, HardDriveDownload, ScrollText, Gauge as GaugeIcon, Zap as ZapIcon, Package, Settings2, ListChecks, GitCompare, Store as StoreIcon, Send as SendIcon, MessageSquare as SmsIcon } from 'lucide-react';
 
 type View = 'prompt' | 'builder' | 'dashboard';
 
@@ -199,6 +219,26 @@ export default function App() {
   const [devicePreviewOpen, setDevicePreviewOpen] = useState(false);
   const [analyticsEventsOpen, setAnalyticsEventsOpen] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
+  const [dbMigrationOpen, setDbMigrationOpen] = useState(false);
+  const [emailTemplateOpen, setEmailTemplateOpen] = useState(false);
+  const [storageOpen, setStorageOpen] = useState(false);
+  const [logViewerOpen, setLogViewerOpen] = useState(false);
+  const [healthCheckOpen, setHealthCheckOpen] = useState(false);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [auditTrailOpen, setAuditTrailOpen] = useState(false);
+  const [customDomainOpen, setCustomDomainOpen] = useState(false);
+  const [oauthOpen, setOauthOpen] = useState(false);
+  const [rateLimitOpen, setRateLimitOpen] = useState(false);
+  const [cacheOpen, setCacheOpen] = useState(false);
+  const [depsOpen, setDepsOpen] = useState(false);
+  const [appConfigOpen, setAppConfigOpen] = useState(false);
+  const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
+  const [codeDiffOpen, setCodeDiffOpen] = useState(false);
+  const [apiKeysOpen, setApiKeysOpen] = useState(false);
+  const [smsOpen, setSmsOpen] = useState(false);
+  const [webhookTesterOpen, setWebhookTesterOpen] = useState(false);
+  const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const buildTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -417,6 +457,26 @@ export default function App() {
     { id: 'device-preview', label: 'Device Preview Switcher', icon: <Monitor className="w-4 h-4" />, section: 'Design', action: () => setDevicePreviewOpen(true) },
     { id: 'analytics-events', label: 'Analytics Events & Funnels', icon: <Target className="w-4 h-4" />, section: 'Analytics', action: () => setAnalyticsEventsOpen(true) },
     { id: 'security', label: 'Security Scanner', icon: <ShieldCheck className="w-4 h-4" />, section: 'Quality', action: () => setSecurityOpen(true) },
+    { id: 'db-migrations', label: 'Database Migrations', icon: <DatabaseIcon className="w-4 h-4" />, section: 'Backend', action: () => setDbMigrationOpen(true) },
+    { id: 'email-templates', label: 'Email Templates', icon: <Mail className="w-4 h-4" />, section: 'Content', action: () => setEmailTemplateOpen(true) },
+    { id: 'storage', label: 'Storage Manager', icon: <HardDrive className="w-4 h-4" />, section: 'Backend', action: () => setStorageOpen(true) },
+    { id: 'logs', label: 'Log Viewer', icon: <Terminal className="w-4 h-4" />, section: 'Monitoring', action: () => setLogViewerOpen(true) },
+    { id: 'health', label: 'Health Checks', icon: <HeartPulse className="w-4 h-4" />, section: 'Monitoring', action: () => setHealthCheckOpen(true) },
+    { id: 'backups', label: 'Backup Manager', icon: <HardDriveDownload className="w-4 h-4" />, section: 'DevOps', action: () => setBackupOpen(true) },
+    { id: 'audit-trail', label: 'Audit Trail', icon: <ScrollText className="w-4 h-4" />, section: 'Security', action: () => setAuditTrailOpen(true) },
+    { id: 'domains', label: 'Custom Domains', icon: <Globe className="w-4 h-4" />, section: 'Deploy', action: () => setCustomDomainOpen(true) },
+    { id: 'oauth', label: 'OAuth Providers', icon: <KeyRound className="w-4 h-4" />, section: 'Auth', action: () => setOauthOpen(true) },
+    { id: 'rate-limit', label: 'Rate Limiting', icon: <GaugeIcon className="w-4 h-4" />, section: 'Backend', action: () => setRateLimitOpen(true) },
+    { id: 'cache', label: 'Cache Manager', icon: <ZapIcon className="w-4 h-4" />, section: 'Backend', action: () => setCacheOpen(true) },
+    { id: 'deps', label: 'Dependencies', icon: <Package className="w-4 h-4" />, section: 'DevOps', action: () => setDepsOpen(true) },
+    { id: 'app-config', label: 'App Config Editor', icon: <Settings2 className="w-4 h-4" />, section: 'Settings', action: () => setAppConfigOpen(true) },
+    { id: 'bulk-actions', label: 'Bulk Actions', icon: <ListChecks className="w-4 h-4" />, section: 'Editing', action: () => setBulkActionsOpen(true) },
+    { id: 'code-diff', label: 'Code Diff Viewer', icon: <GitCompare className="w-4 h-4" />, section: 'Code', action: () => setCodeDiffOpen(true) },
+    { id: 'api-keys', label: 'API Key Manager', icon: <KeyRound className="w-4 h-4" />, section: 'Security', action: () => setApiKeysOpen(true) },
+    { id: 'sms', label: 'SMS Configuration', icon: <SmsIcon className="w-4 h-4" />, section: 'Engagement', action: () => setSmsOpen(true) },
+    { id: 'webhook-tester', label: 'Webhook Tester', icon: <Webhook className="w-4 h-4" />, section: 'Backend', action: () => setWebhookTesterOpen(true) },
+    { id: 'integrations', label: 'Integration Marketplace', icon: <StoreIcon className="w-4 h-4" />, section: 'Extensions', action: () => setIntegrationsOpen(true) },
+    { id: 'project-settings', label: 'Project Settings', icon: <SettingsIcon className="w-4 h-4" />, section: 'Settings', action: () => setProjectSettingsOpen(true) },
   ];
 
   if (view === 'prompt') {
@@ -518,6 +578,9 @@ export default function App() {
           <SubToolbarBtn icon={<Palette className="w-3 h-3" />} label="Tokens" onClick={() => setDesignTokensOpen(true)} />
           <SubToolbarBtn icon={<A11yIcon className="w-3 h-3" />} label="A11y" onClick={() => setA11yOpen(true)} />
           <SubToolbarBtn icon={<FormInput className="w-3 h-3" />} label="Forms" onClick={() => setFormBuilderOpen(true)} />
+          <SubToolbarBtn icon={<HardDrive className="w-3 h-3" />} label="Storage" onClick={() => setStorageOpen(true)} />
+          <SubToolbarBtn icon={<Mail className="w-3 h-3" />} label="Email Templates" onClick={() => setEmailTemplateOpen(true)} />
+          <SubToolbarBtn icon={<Globe className="w-3 h-3" />} label="i18n" onClick={() => setLocalizationOpen(true)} />
           <div className="flex-1" />
           <SubToolbarBtn icon={<ArrowRight className="w-3 h-3 rotate-180" />} label="Undo" onClick={undo} disabled={!canUndo} />
           <SubToolbarBtn icon={<ArrowRight className="w-3 h-3" />} label="Redo" onClick={redo} disabled={!canRedo} />
@@ -540,6 +603,11 @@ export default function App() {
           <SubToolbarBtn icon={<GitBranchIcon className="w-3 h-3" />} label="CI/CD" onClick={() => setCIPipelineOpen(true)} />
           <SubToolbarBtn icon={<ShieldCheck className="w-3 h-3" />} label="Security" onClick={() => setSecurityOpen(true)} />
           <SubToolbarBtn icon={<Users className="w-3 h-3" />} label="Team" onClick={() => setTeamOpen(true)} />
+          <SubToolbarBtn icon={<StoreIcon className="w-3 h-3" />} label="Integrations" onClick={() => setIntegrationsOpen(true)} />
+          <SubToolbarBtn icon={<HardDriveDownload className="w-3 h-3" />} label="Backups" onClick={() => setBackupOpen(true)} />
+          <SubToolbarBtn icon={<ScrollText className="w-3 h-3" />} label="Audit Trail" onClick={() => setAuditTrailOpen(true)} />
+          <SubToolbarBtn icon={<Globe className="w-3 h-3" />} label="Domains" onClick={() => setCustomDomainOpen(true)} />
+          <SubToolbarBtn icon={<Settings2 className="w-3 h-3" />} label="Project" onClick={() => setProjectSettingsOpen(true)} />
         </div>
       )}
 
@@ -550,8 +618,46 @@ export default function App() {
           <SubToolbarBtn icon={<Code2 className="w-3 h-3" />} label="API" onClick={() => setApiOpen(true)} />
           <SubToolbarBtn icon={<DbIconExplore className="w-3 h-3" />} label="Data Explorer" onClick={() => setDataExplorerOpen(true)} />
           <SubToolbarBtn icon={<Webhook className="w-3 h-3" />} label="Webhooks" onClick={() => setWebhookOpen(true)} />
+          <SubToolbarBtn icon={<Webhook className="w-3 h-3" />} label="Webhook Tester" onClick={() => setWebhookTesterOpen(true)} />
           <SubToolbarBtn icon={<Clock className="w-3 h-3" />} label="Cron Jobs" onClick={() => setScheduledOpen(true)} />
           <SubToolbarBtn icon={<KeyRound className="w-3 h-3" />} label="Env Vars" onClick={() => setEnvVarsOpen(true)} />
+          <SubToolbarBtn icon={<DatabaseIcon className="w-3 h-3" />} label="Migrations" onClick={() => setDbMigrationOpen(true)} />
+          <SubToolbarBtn icon={<ZapIcon className="w-3 h-3" />} label="Cache" onClick={() => setCacheOpen(true)} />
+          <SubToolbarBtn icon={<GaugeIcon className="w-3 h-3" />} label="Rate Limit" onClick={() => setRateLimitOpen(true)} />
+          <SubToolbarBtn icon={<Terminal className="w-3 h-3" />} label="Logs" onClick={() => setLogViewerOpen(true)} />
+        </div>
+      )}
+
+      {/* Sub-toolbar for audit tab */}
+      {activeTab === 'audit' && (
+        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
+          <SubToolbarBtn icon={<ShieldCheck className="w-3 h-3" />} label="Security Scan" onClick={() => setSecurityOpen(true)} />
+          <SubToolbarBtn icon={<A11yIcon className="w-3 h-3" />} label="Accessibility" onClick={() => setA11yOpen(true)} />
+          <SubToolbarBtn icon={<ScrollText className="w-3 h-3" />} label="Audit Trail" onClick={() => setAuditTrailOpen(true)} />
+          <SubToolbarBtn icon={<Package className="w-3 h-3" />} label="Dependencies" onClick={() => setDepsOpen(true)} />
+          <SubToolbarBtn icon={<GitCompare className="w-3 h-3" />} label="Code Diff" onClick={() => setCodeDiffOpen(true)} />
+          <SubToolbarBtn icon={<ListChecks className="w-3 h-3" />} label="Bulk Actions" onClick={() => setBulkActionsOpen(true)} />
+        </div>
+      )}
+
+      {/* Sub-toolbar for analytics tab */}
+      {activeTab === 'analytics' && (
+        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
+          <SubToolbarBtn icon={<Target className="w-3 h-3" />} label="Events & Funnels" onClick={() => setAnalyticsEventsOpen(true)} />
+          <SubToolbarBtn icon={<Route className="w-3 h-3" />} label="User Journeys" onClick={() => setJourneyOpen(true)} />
+          <SubToolbarBtn icon={<FlaskConical className="w-3 h-3" />} label="A/B Tests" onClick={() => setAbTestingOpen(true)} />
+          <SubToolbarBtn icon={<HeartPulse className="w-3 h-3" />} label="Health" onClick={() => setHealthCheckOpen(true)} />
+          <SubToolbarBtn icon={<Terminal className="w-3 h-3" />} label="Logs" onClick={() => setLogViewerOpen(true)} />
+        </div>
+      )}
+
+      {/* Sub-toolbar for test tab */}
+      {activeTab === 'test' && (
+        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
+          <SubToolbarBtn icon={<FlaskConical className="w-3 h-3" />} label="A/B Testing" onClick={() => setAbTestingOpen(true)} />
+          <SubToolbarBtn icon={<GitBranchIcon className="w-3 h-3" />} label="CI/CD Pipeline" onClick={() => setCIPipelineOpen(true)} />
+          <SubToolbarBtn icon={<Bug className="w-3 h-3" />} label="Error Monitor" onClick={() => setErrorOpen(true)} />
+          <SubToolbarBtn icon={<ShieldCheck className="w-3 h-3" />} label="Security" onClick={() => setSecurityOpen(true)} />
         </div>
       )}
 
@@ -664,6 +770,26 @@ export default function App() {
       <DevicePreviewSwitcher open={devicePreviewOpen} onClose={() => setDevicePreviewOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''} />
       <AnalyticsEvents open={analyticsEventsOpen} onClose={() => setAnalyticsEventsOpen(false)} />
       <SecurityScanner open={securityOpen} onClose={() => setSecurityOpen(false)} />
+      <DatabaseMigrationManager open={dbMigrationOpen} onClose={() => setDbMigrationOpen(false)} />
+      <EmailTemplateEditor open={emailTemplateOpen} onClose={() => setEmailTemplateOpen(false)} appName={project?.name ?? ''} />
+      <StorageManager open={storageOpen} onClose={() => setStorageOpen(false)} />
+      <LogViewer open={logViewerOpen} onClose={() => setLogViewerOpen(false)} />
+      <HealthCheckDashboard open={healthCheckOpen} onClose={() => setHealthCheckOpen(false)} />
+      <BackupManager open={backupOpen} onClose={() => setBackupOpen(false)} />
+      <AuditTrailPanel open={auditTrailOpen} onClose={() => setAuditTrailOpen(false)} />
+      <CustomDomainConfig open={customDomainOpen} onClose={() => setCustomDomainOpen(false)} appName={project?.name ?? ''} />
+      <OAuthProvidersConfig open={oauthOpen} onClose={() => setOauthOpen(false)} />
+      <RateLimitConfig open={rateLimitOpen} onClose={() => setRateLimitOpen(false)} />
+      <CacheManager open={cacheOpen} onClose={() => setCacheOpen(false)} />
+      <DependencyManager open={depsOpen} onClose={() => setDepsOpen(false)} />
+      <AppConfigEditor open={appConfigOpen} onClose={() => setAppConfigOpen(false)} appName={project?.name ?? ''} />
+      <BulkActionsPanel open={bulkActionsOpen} onClose={() => setBulkActionsOpen(false)} regions={regions} />
+      <CodeDiffViewer open={codeDiffOpen} onClose={() => setCodeDiffOpen(false)} />
+      <APIKeyManager open={apiKeysOpen} onClose={() => setApiKeysOpen(false)} />
+      <SMSConfig open={smsOpen} onClose={() => setSmsOpen(false)} />
+      <WebhookTester open={webhookTesterOpen} onClose={() => setWebhookTesterOpen(false)} />
+      <IntegrationMarketplace open={integrationsOpen} onClose={() => setIntegrationsOpen(false)} />
+      <ProjectSettings open={projectSettingsOpen} onClose={() => setProjectSettingsOpen(false)} project={project} />
     </div>
   );
 }
