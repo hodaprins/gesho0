@@ -51,84 +51,164 @@ import type {
   ColorScheme,
   ScreenElement,
 } from '@/types/builder';
-import PromptScreen from '@/components/PromptScreen';
-import BuildStages from '@/components/BuildStages';
-import PhonePreview from '@/components/PhonePreview';
-import RegionModal from '@/components/RegionModal';
-import Header from '@/components/Header';
-import ProjectDashboard from '@/components/ProjectDashboard';
-import CodeViewer from '@/components/CodeViewer';
-import ThemeEditor from '@/components/ThemeEditor';
-import ComponentLibrary from '@/components/ComponentLibrary';
-import ScreenFlow from '@/components/ScreenFlow';
-import AIChat from '@/components/AIChat';
-import BuildMetrics from '@/components/BuildMetrics';
-import AuditPanel from '@/components/AuditPanel';
-import TestPanel from '@/components/TestPanel';
-import DeployDialog from '@/components/DeployDialog';
-import AppStoreAssets from '@/components/AppStoreAssets';
-import VersionHistory from '@/components/VersionHistory';
-import ExportPanel from '@/components/ExportPanel';
 import CommandPalette, { type Command } from '@/components/CommandPalette';
-import GlobalSearch from '@/components/GlobalSearch';
-import AssetManager from '@/components/AssetManager';
 import TypographyEditor, { type TypographyConfig } from '@/components/TypographyEditor';
-import ScreenTemplatePicker from '@/components/ScreenTemplatePicker';
-import AnalyticsDashboard from '@/components/AnalyticsDashboard';
-import PushComposer from '@/components/PushComposer';
-import OnboardingBuilder from '@/components/OnboardingBuilder';
-import ApiExplorer from '@/components/ApiExplorer';
-import SeedDataPanel from '@/components/SeedDataPanel';
-import ErrorMonitor from '@/components/ErrorMonitor';
-import PerformanceProfiler from '@/components/PerformanceProfiler';
-import CommentsPanel from '@/components/CommentsPanel';
-import ShareDialog from '@/components/ShareDialog';
 import SettingsPanel, { type UserPreferences } from '@/components/SettingsPanel';
-import ShortcutsGuide from '@/components/ShortcutsGuide';
-import ActivityLog from '@/components/ActivityLog';
-import NotificationCenter from '@/components/NotificationCenter';
 import { useHistory } from '@/lib/useHistory';
-import type { ScreenTemplateDef } from '@/lib/screenTemplates';
 import ABTestingPanel from '@/components/ABTestingPanel';
-import LocalizationEditor from '@/components/LocalizationEditor';
-import FeatureFlagsManager from '@/components/FeatureFlagsManager';
-import CIPipelineVisualizer from '@/components/CIPipelineVisualizer';
-import UserJourneyMapper from '@/components/UserJourneyMapper';
-import FormBuilder from '@/components/FormBuilder';
-import NavigationGraph from '@/components/NavigationGraph';
-import WebhookManager from '@/components/WebhookManager';
-import ScheduledTasks from '@/components/ScheduledTasks';
-import DataExplorer from '@/components/DataExplorer';
-import ComponentInspector from '@/components/ComponentInspector';
-import DesignTokensManager from '@/components/DesignTokensManager';
-import AccessibilityChecker from '@/components/AccessibilityChecker';
-import TeamPanel from '@/components/TeamPanel';
-import ReleaseNotesGenerator from '@/components/ReleaseNotesGenerator';
-import DeepLinkConfigurator from '@/components/DeepLinkConfigurator';
-import EnvVarsManager from '@/components/EnvVarsManager';
-import DevicePreviewSwitcher from '@/components/DevicePreviewSwitcher';
-import AnalyticsEvents from '@/components/AnalyticsEvents';
-import SecurityScanner from '@/components/SecurityScanner';
-import DatabaseMigrationManager from '@/components/DatabaseMigrationManager';
-import EmailTemplateEditor from '@/components/EmailTemplateEditor';
-import StorageManager from '@/components/StorageManager';
-import LogViewer from '@/components/LogViewer';
-import HealthCheckDashboard from '@/components/HealthCheckDashboard';
-import BackupManager from '@/components/BackupManager';
-import AuditTrailPanel from '@/components/AuditTrailPanel';
-import CustomDomainConfig from '@/components/CustomDomainConfig';
-import OAuthProvidersConfig from '@/components/OAuthProvidersConfig';
-import RateLimitConfig from '@/components/RateLimitConfig';
-import CacheManager from '@/components/CacheManager';
-import DependencyManager from '@/components/DependencyManager';
-import AppConfigEditor from '@/components/AppConfigEditor';
-import BulkActionsPanel from '@/components/BulkActionsPanel';
-import CodeDiffViewer from '@/components/CodeDiffViewer';
+import AIAnomalyDetector from '@/components/AIAnomalyDetector';
+import AIAppValuationCalculator from '@/components/AIAppValuationCalculator';
+import AIChat from '@/components/AIChat';
+import AICognitiveLoadAnalyzer from '@/components/AICognitiveLoadAnalyzer';
+import AICompetitorGapAnalyzer from '@/components/AICompetitorGapAnalyzer';
+import AICritiquePersona from '@/components/AICritiquePersona';
+import AIFrictionScore from '@/components/AIFrictionScore';
+import AIHeatmapPredictor from '@/components/AIHeatmapPredictor';
+import AIMonetizationStrategist from '@/components/AIMonetizationStrategist';
+import AISecurityPatchRecommender from '@/components/AISecurityPatchRecommender';
 import APIKeyManager from '@/components/APIKeyManager';
-import SMSConfig from '@/components/SMSConfig';
-import WebhookTester from '@/components/WebhookTester';
+import AccessibilityChecker from '@/components/AccessibilityChecker';
+import ActivityLog from '@/components/ActivityLog';
+import AnalyticsDashboard from '@/components/AnalyticsDashboard';
+import AnalyticsEvents from '@/components/AnalyticsEvents';
+import ApiExplorer from '@/components/ApiExplorer';
+import AppConfigEditor from '@/components/AppConfigEditor';
+import AppMarketSizingTool from '@/components/AppMarketSizingTool';
+import AppStoreAssets from '@/components/AppStoreAssets';
+import AppStoreRankingPredictor from '@/components/AppStoreRankingPredictor';
+import AssetManager from '@/components/AssetManager';
+import AuditPanel from '@/components/AuditPanel';
+import AuditTrailPanel from '@/components/AuditTrailPanel';
+import BackupManager from '@/components/BackupManager';
+import BatteryImpactProfiler from '@/components/BatteryImpactProfiler';
+import BuildMetrics from '@/components/BuildMetrics';
+import BuildStages from '@/components/BuildStages';
+import BulkActionsPanel from '@/components/BulkActionsPanel';
+import BundleSizeTreemap from '@/components/BundleSizeTreemap';
+import CIPipelineVisualizer from '@/components/CIPipelineVisualizer';
+import CacheManager from '@/components/CacheManager';
+import CodeDiffViewer from '@/components/CodeDiffViewer';
+import { CodeReviewAssignment } from '@/components/CodeReviewAssignment';
+import CodeViewer from '@/components/CodeViewer';
+import { CollaborativeEditingPanel } from '@/components/CollaborativeEditingPanel';
+import ColorPsychologyEngine from '@/components/ColorPsychologyEngine';
+import CommentsPanel from '@/components/CommentsPanel';
+import CompetitiveLandscapeMapper from '@/components/CompetitiveLandscapeMapper';
+import ComponentInspector from '@/components/ComponentInspector';
+import ComponentLibrary from '@/components/ComponentLibrary';
+import ComponentStorybook from '@/components/ComponentStorybook';
+import ContextMenuBar from '@/components/ContextMenuBar';
+import CookieConsentDesigner from '@/components/CookieConsentDesigner';
+import CrossDeviceScreenshotDiff from '@/components/CrossDeviceScreenshotDiff';
+import CustomDomainConfig from '@/components/CustomDomainConfig';
+import CustomizableDashboard from '@/components/CustomizableDashboard';
+import DataExplorer from '@/components/DataExplorer';
+import DataFlowVisualizer from '@/components/DataFlowVisualizer';
+import DataRetentionPolicyBuilder from '@/components/DataRetentionPolicyBuilder';
+import DatabaseMigrationManager from '@/components/DatabaseMigrationManager';
+import DeepLinkConfigurator from '@/components/DeepLinkConfigurator';
+import DependencyManager from '@/components/DependencyManager';
+import DeployDialog from '@/components/DeployDialog';
+import { DesignReviewSystem } from '@/components/DesignReviewSystem';
+import DesignTokensManager from '@/components/DesignTokensManager';
+import DevicePreviewSwitcher from '@/components/DevicePreviewSwitcher';
+import EdgeFunctionVisualBuilder from '@/components/EdgeFunctionVisualBuilder';
+import EmailDigestSettings from '@/components/EmailDigestSettings';
+import EmailTemplateEditor from '@/components/EmailTemplateEditor';
+import EmptyStateDesigner from '@/components/EmptyStateDesigner';
+import EncryptionAuditDashboard from '@/components/EncryptionAuditDashboard';
+import EnvVarsManager from '@/components/EnvVarsManager';
+import ErrorMonitor from '@/components/ErrorMonitor';
+import ExportPanel from '@/components/ExportPanel';
+import FeatureFlagsManager from '@/components/FeatureFlagsManager';
+import { FeatureRequestBoard } from '@/components/FeatureRequestBoard';
+import { FeedbackCollector } from '@/components/FeedbackCollector';
+import FontSizeAdjuster from '@/components/FontSizeAdjuster';
+import FormBuilder from '@/components/FormBuilder';
+import GDPRComplianceScanner from '@/components/GDPRComplianceScanner';
+import GamificationSystem from '@/components/GamificationSystem';
+import GlobalSearch from '@/components/GlobalSearch';
+import GraphQLSchemaVisualDesigner from '@/components/GraphQLSchemaVisualDesigner';
+import GrowthLoopVisualizer from '@/components/GrowthLoopVisualizer';
+import Header from '@/components/Header';
+import HealthCheckDashboard from '@/components/HealthCheckDashboard';
+import ImageCompressionSettings from '@/components/ImageCompressionSettings';
 import IntegrationMarketplace from '@/components/IntegrationMarketplace';
+import { InteractiveRoadmap } from '@/components/InteractiveRoadmap';
+import InvestorPitchDeckGenerator from '@/components/InvestorPitchDeckGenerator';
+import KeyboardShortcutsMap from '@/components/KeyboardShortcutsMap';
+import LighthouseScorePredictor from '@/components/LighthouseScorePredictor';
+import LocalizationEditor from '@/components/LocalizationEditor';
+import LogViewer from '@/components/LogViewer';
+import MemoryLeakVisualizer from '@/components/MemoryLeakVisualizer';
+import MicroInteractionLibrary from '@/components/MicroInteractionLibrary';
+import MiniMapNavigator from '@/components/MiniMapNavigator';
+import MobileResponsivePreview from '@/components/MobileResponsivePreview';
+import NavigationGraph from '@/components/NavigationGraph';
+import NetworkConditionSimulator from '@/components/NetworkConditionSimulator';
+import NotificationCenter from '@/components/NotificationCenter';
+import NotificationPreferences from '@/components/NotificationPreferences';
+import OAuthProvidersConfig from '@/components/OAuthProvidersConfig';
+import OfflineFirstSyncDesigner from '@/components/OfflineFirstSyncDesigner';
+import OnboardingBuilder from '@/components/OnboardingBuilder';
+import OnboardingTour from '@/components/OnboardingTour';
+import PIIDataScanner from '@/components/PIIDataScanner';
+import PageTransitionConfig from '@/components/PageTransitionConfig';
+import PenetrationTestReportGenerator from '@/components/PenetrationTestReportGenerator';
+import PerformanceProfiler from '@/components/PerformanceProfiler';
+import PermissionMatrixVisualizer from '@/components/PermissionMatrixVisualizer';
+import PhonePreview from '@/components/PhonePreview';
+import { PinnedFavoritesBar } from '@/components/PinnedFavoritesBar';
+import { PlatformAnalytics } from '@/components/PlatformAnalytics';
+import PlatformLanguageSwitcher from '@/components/PlatformLanguageSwitcher';
+import PredictiveChurnIndicator from '@/components/PredictiveChurnIndicator';
+import PricingStrategyABTester from '@/components/PricingStrategyABTester';
+import PrivacyPolicyAutoGenerator from '@/components/PrivacyPolicyAutoGenerator';
+import ProjectDashboard from '@/components/ProjectDashboard';
 import ProjectSettings from '@/components/ProjectSettings';
+import PromptScreen from '@/components/PromptScreen';
+import PushComposer from '@/components/PushComposer';
+import RateLimitConfig from '@/components/RateLimitConfig';
+import ReducedMotionSettings from '@/components/ReducedMotionSettings';
+import ReferralProgramDesigner from '@/components/ReferralProgramDesigner';
+import RegionModal from '@/components/RegionModal';
+import ReleaseNotesGenerator from '@/components/ReleaseNotesGenerator';
+import ResponsiveBreakpointDebugger from '@/components/ResponsiveBreakpointDebugger';
+import RetinaDisplaySettings from '@/components/RetinaDisplaySettings';
+import RevenueProjectionEngine from '@/components/RevenueProjectionEngine';
+import ReviewSentimentAnalyzer from '@/components/ReviewSentimentAnalyzer';
+import SMSConfig from '@/components/SMSConfig';
+import ScheduledTasks from '@/components/ScheduledTasks';
+import ScreenFlow from '@/components/ScreenFlow';
+import ScreenTemplatePicker from '@/components/ScreenTemplatePicker';
+import SecurityScanner from '@/components/SecurityScanner';
+import SeedDataPanel from '@/components/SeedDataPanel';
+import SettingsExportImport from '@/components/SettingsExportImport';
+import ShareDialog from '@/components/ShareDialog';
+import ShortcutsGuide from '@/components/ShortcutsGuide';
+import SkeletonLoadingPreview from '@/components/SkeletonLoadingPreview';
+import SmartCacheIndicator from '@/components/SmartCacheIndicator';
+import SmartDesignSystemGenerator from '@/components/SmartDesignSystemGenerator';
+import { SprintPlanner } from '@/components/SprintPlanner';
+import StorageManager from '@/components/StorageManager';
+import SyntheticUserSimulator from '@/components/SyntheticUserSimulator';
+import TeamPanel from '@/components/TeamPanel';
+import TemplatesGallery from '@/components/TemplatesGallery';
+import TestPanel from '@/components/TestPanel';
+import ThemeEditor from '@/components/ThemeEditor';
+import TimelineAnimationComposer from '@/components/TimelineAnimationComposer';
+import UndoTimeline from '@/components/UndoTimeline';
+import UserJourneyMapper from '@/components/UserJourneyMapper';
+import VersionHistory from '@/components/VersionHistory';
+import ViralCoefficientCalculator from '@/components/ViralCoefficientCalculator';
+import VisualGestureBuilder from '@/components/VisualGestureBuilder';
+import VisualRegexBuilder from '@/components/VisualRegexBuilder';
+import VisualStateMachineEditor from '@/components/VisualStateMachineEditor';
+import VoiceCommandPanel from '@/components/VoiceCommandPanel';
+import WebSocketEventDesigner from '@/components/WebSocketEventDesigner';
+import WebhookManager from '@/components/WebhookManager';
+import WebhookTester from '@/components/WebhookTester';
+import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
 import { Target, ShieldCheck, FlaskConical, Globe, Flag, GitBranch as GitBranchIcon, Route, FormInput, Network, Webhook, Clock, Database as DbIconExplore, SlidersHorizontal, Accessibility as A11yIcon, Users, FileText, Link2, KeyRound, Monitor, HardDrive, Mail, Terminal, HeartPulse, HardDriveDownload, ScrollText, Gauge as GaugeIcon, Zap as ZapIcon, Package, Settings2, ListChecks, GitCompare, Store as StoreIcon, Send as SendIcon, MessageSquare as SmsIcon } from 'lucide-react';
 
 type View = 'prompt' | 'builder' | 'dashboard';
@@ -180,66 +260,216 @@ export default function App() {
   const [typography, setTypography] = useState<TypographyConfig>(DEFAULT_TYPOGRAPHY);
   const [prefs, setPrefs] = useState<UserPreferences>(DEFAULT_PREFS);
 
-  const [deployOpen, setDeployOpen] = useState(false);
-  const [storeOpen, setStoreOpen] = useState(false);
-  const [versionsOpen, setVersionsOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [commandOpen, setCommandOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [assetOpen, setAssetOpen] = useState(false);
-  const [typographyOpen, setTypographyOpen] = useState(false);
-  const [screenTemplateOpen, setScreenTemplateOpen] = useState(false);
-  const [pushOpen, setPushOpen] = useState(false);
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [apiOpen, setApiOpen] = useState(false);
-  const [seedOpen, setSeedOpen] = useState(false);
-  const [errorOpen, setErrorOpen] = useState(false);
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [abTestingOpen, setAbTestingOpen] = useState(false);
-  const [localizationOpen, setLocalizationOpen] = useState(false);
-  const [featureFlagsOpen, setFeatureFlagsOpen] = useState(false);
-  const [ciPipelineOpen, setCIPipelineOpen] = useState(false);
-  const [journeyOpen, setJourneyOpen] = useState(false);
-  const [formBuilderOpen, setFormBuilderOpen] = useState(false);
-  const [navGraphOpen, setNavGraphOpen] = useState(false);
-  const [webhookOpen, setWebhookOpen] = useState(false);
-  const [scheduledOpen, setScheduledOpen] = useState(false);
-  const [dataExplorerOpen, setDataExplorerOpen] = useState(false);
-  const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [designTokensOpen, setDesignTokensOpen] = useState(false);
-  const [a11yOpen, setA11yOpen] = useState(false);
-  const [teamOpen, setTeamOpen] = useState(false);
-  const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
-  const [deepLinkOpen, setDeepLinkOpen] = useState(false);
-  const [envVarsOpen, setEnvVarsOpen] = useState(false);
-  const [devicePreviewOpen, setDevicePreviewOpen] = useState(false);
+  const [deployDialogOpen, setdeployDialogOpen] = useState(false);
+  const [exportPanelOpen, setexportPanelOpen] = useState(false);
+  const [commandPaletteOpen, setcommandPaletteOpen] = useState(false);
+  const [assetManagerOpen, setassetManagerOpen] = useState(false);
+  const [typographyEditorOpen, settypographyEditorOpen] = useState(false);
+  const [screenTemplatePickerOpen, setscreenTemplatePickerOpen] = useState(false);
+  const [pushComposerOpen, setpushComposerOpen] = useState(false);
+  const [onboardingBuilderOpen, setonboardingBuilderOpen] = useState(false);
+  const [apiExplorerOpen, setapiExplorerOpen] = useState(false);
+  const [seedDataPanelOpen, setseedDataPanelOpen] = useState(false);
+  const [errorMonitorOpen, seterrorMonitorOpen] = useState(false);
+  const [commentsPanelOpen, setcommentsPanelOpen] = useState(false);
+  const [shareDialogOpen, setshareDialogOpen] = useState(false);
+  const [settingsPanelOpen, setsettingsPanelOpen] = useState(false);
+  const [shortcutsGuideOpen, setshortcutsGuideOpen] = useState(false);
+  const [localizationEditorOpen, setlocalizationEditorOpen] = useState(false);
+  const [featureFlagsManagerOpen, setfeatureFlagsManagerOpen] = useState(false);
+  const [webhookManagerOpen, setwebhookManagerOpen] = useState(false);
+  const [scheduledTasksOpen, setscheduledTasksOpen] = useState(false);
+  const [designTokensManagerOpen, setdesignTokensManagerOpen] = useState(false);
+  const [teamPanelOpen, setteamPanelOpen] = useState(false);
+  const [releaseNotesGeneratorOpen, setreleaseNotesGeneratorOpen] = useState(false);
+  const [deepLinkConfiguratorOpen, setdeepLinkConfiguratorOpen] = useState(false);
+  const [envVarsManagerOpen, setenvVarsManagerOpen] = useState(false);
+  const [devicePreviewSwitcherOpen, setdevicePreviewSwitcherOpen] = useState(false);
+  const [securityScannerOpen, setsecurityScannerOpen] = useState(false);
+  const [emailTemplateEditorOpen, setemailTemplateEditorOpen] = useState(false);
+  const [storageManagerOpen, setstorageManagerOpen] = useState(false);
+  const [healthCheckDashboardOpen, sethealthCheckDashboardOpen] = useState(false);
+  const [backupManagerOpen, setbackupManagerOpen] = useState(false);
+  const [auditTrailPanelOpen, setauditTrailPanelOpen] = useState(false);
+  const [customDomainConfigOpen, setcustomDomainConfigOpen] = useState(false);
+  const [rateLimitConfigOpen, setrateLimitConfigOpen] = useState(false);
+  const [cacheManagerOpen, setcacheManagerOpen] = useState(false);
+  const [appConfigEditorOpen, setappConfigEditorOpen] = useState(false);
+  const [bulkActionsPanelOpen, setbulkActionsPanelOpen] = useState(false);
+  const [codeDiffViewerOpen, setcodeDiffViewerOpen] = useState(false);
+  const [aBTestingPanelOpen, setaBTestingPanelOpen] = useState(false);
+  const [aIAnomalyDetectorOpen, setaIAnomalyDetectorOpen] = useState(false);
+  const [aIAppValuationCalculatorOpen, setaIAppValuationCalculatorOpen] = useState(false);
+  const [aIChatOpen, setaIChatOpen] = useState(false);
+  const [aICognitiveLoadAnalyzerOpen, setaICognitiveLoadAnalyzerOpen] = useState(false);
+  const [aICompetitorGapAnalyzerOpen, setaICompetitorGapAnalyzerOpen] = useState(false);
+  const [aICritiquePersonaOpen, setaICritiquePersonaOpen] = useState(false);
+  const [aIFrictionScoreOpen, setaIFrictionScoreOpen] = useState(false);
+  const [aIHeatmapPredictorOpen, setaIHeatmapPredictorOpen] = useState(false);
+  const [aIMonetizationStrategistOpen, setaIMonetizationStrategistOpen] = useState(false);
+  const [aISecurityPatchRecommenderOpen, setaISecurityPatchRecommenderOpen] = useState(false);
+  const [aPIKeyManagerOpen, setaPIKeyManagerOpen] = useState(false);
+  const [accessibilityCheckerOpen, setaccessibilityCheckerOpen] = useState(false);
+  const [activityLogOpen, setactivityLogOpen] = useState(false);
+  const [analyticsDashboardOpen, setanalyticsDashboardOpen] = useState(false);
   const [analyticsEventsOpen, setAnalyticsEventsOpen] = useState(false);
-  const [securityOpen, setSecurityOpen] = useState(false);
-  const [dbMigrationOpen, setDbMigrationOpen] = useState(false);
-  const [emailTemplateOpen, setEmailTemplateOpen] = useState(false);
-  const [storageOpen, setStorageOpen] = useState(false);
+  const [appMarketSizingToolOpen, setappMarketSizingToolOpen] = useState(false);
+  const [appStoreAssetsOpen, setappStoreAssetsOpen] = useState(false);
+  const [appStoreRankingPredictorOpen, setappStoreRankingPredictorOpen] = useState(false);
+  const [auditPanelOpen, setauditPanelOpen] = useState(false);
+  const [batteryImpactProfilerOpen, setbatteryImpactProfilerOpen] = useState(false);
+  const [buildMetricsOpen, setbuildMetricsOpen] = useState(false);
+  const [buildStagesOpen, setbuildStagesOpen] = useState(false);
+  const [bundleSizeTreemapOpen, setbundleSizeTreemapOpen] = useState(false);
+  const [cIPipelineVisualizerOpen, setcIPipelineVisualizerOpen] = useState(false);
+  const [codeReviewAssignmentOpen, setcodeReviewAssignmentOpen] = useState(false);
+  const [codeViewerOpen, setcodeViewerOpen] = useState(false);
+  const [collaborativeEditingPanelOpen, setcollaborativeEditingPanelOpen] = useState(false);
+  const [colorPsychologyEngineOpen, setcolorPsychologyEngineOpen] = useState(false);
+  const [competitiveLandscapeMapperOpen, setcompetitiveLandscapeMapperOpen] = useState(false);
+  const [componentInspectorOpen, setcomponentInspectorOpen] = useState(false);
+  const [componentLibraryOpen, setcomponentLibraryOpen] = useState(false);
+  const [componentStorybookOpen, setcomponentStorybookOpen] = useState(false);
+  const [contextMenuBarOpen, setcontextMenuBarOpen] = useState(false);
+  const [cookieConsentDesignerOpen, setcookieConsentDesignerOpen] = useState(false);
+  const [crossDeviceScreenshotDiffOpen, setcrossDeviceScreenshotDiffOpen] = useState(false);
+  const [customizableDashboardOpen, setcustomizableDashboardOpen] = useState(false);
+  const [dataExplorerOpen, setDataExplorerOpen] = useState(false);
+  const [dataFlowVisualizerOpen, setdataFlowVisualizerOpen] = useState(false);
+  const [dataRetentionPolicyBuilderOpen, setdataRetentionPolicyBuilderOpen] = useState(false);
+  const [databaseMigrationManagerOpen, setdatabaseMigrationManagerOpen] = useState(false);
+  const [dependencyManagerOpen, setdependencyManagerOpen] = useState(false);
+  const [designReviewSystemOpen, setdesignReviewSystemOpen] = useState(false);
+  const [edgeFunctionVisualBuilderOpen, setedgeFunctionVisualBuilderOpen] = useState(false);
+  const [emailDigestSettingsOpen, setemailDigestSettingsOpen] = useState(false);
+  const [emptyStateDesignerOpen, setemptyStateDesignerOpen] = useState(false);
+  const [encryptionAuditDashboardOpen, setencryptionAuditDashboardOpen] = useState(false);
+  const [featureRequestBoardOpen, setfeatureRequestBoardOpen] = useState(false);
+  const [feedbackCollectorOpen, setfeedbackCollectorOpen] = useState(false);
+  const [fontSizeAdjusterOpen, setfontSizeAdjusterOpen] = useState(false);
+  const [formBuilderOpen, setFormBuilderOpen] = useState(false);
+  const [gDPRComplianceScannerOpen, setgDPRComplianceScannerOpen] = useState(false);
+  const [gamificationSystemOpen, setgamificationSystemOpen] = useState(false);
+  const [globalSearchOpen, setglobalSearchOpen] = useState(false);
+  const [graphQLSchemaVisualDesignerOpen, setgraphQLSchemaVisualDesignerOpen] = useState(false);
+  const [growthLoopVisualizerOpen, setgrowthLoopVisualizerOpen] = useState(false);
+  const [headerOpen, setheaderOpen] = useState(false);
+  const [imageCompressionSettingsOpen, setimageCompressionSettingsOpen] = useState(false);
+  const [integrationMarketplaceOpen, setintegrationMarketplaceOpen] = useState(false);
+  const [interactiveRoadmapOpen, setinteractiveRoadmapOpen] = useState(false);
+  const [investorPitchDeckGeneratorOpen, setinvestorPitchDeckGeneratorOpen] = useState(false);
+  const [keyboardShortcutsMapOpen, setkeyboardShortcutsMapOpen] = useState(false);
+  const [lighthouseScorePredictorOpen, setlighthouseScorePredictorOpen] = useState(false);
   const [logViewerOpen, setLogViewerOpen] = useState(false);
-  const [healthCheckOpen, setHealthCheckOpen] = useState(false);
-  const [backupOpen, setBackupOpen] = useState(false);
-  const [auditTrailOpen, setAuditTrailOpen] = useState(false);
-  const [customDomainOpen, setCustomDomainOpen] = useState(false);
-  const [oauthOpen, setOauthOpen] = useState(false);
-  const [rateLimitOpen, setRateLimitOpen] = useState(false);
-  const [cacheOpen, setCacheOpen] = useState(false);
-  const [depsOpen, setDepsOpen] = useState(false);
-  const [appConfigOpen, setAppConfigOpen] = useState(false);
-  const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
-  const [codeDiffOpen, setCodeDiffOpen] = useState(false);
-  const [apiKeysOpen, setApiKeysOpen] = useState(false);
-  const [smsOpen, setSmsOpen] = useState(false);
-  const [webhookTesterOpen, setWebhookTesterOpen] = useState(false);
-  const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [memoryLeakVisualizerOpen, setmemoryLeakVisualizerOpen] = useState(false);
+  const [microInteractionLibraryOpen, setmicroInteractionLibraryOpen] = useState(false);
+  const [miniMapNavigatorOpen, setminiMapNavigatorOpen] = useState(false);
+  const [mobileResponsivePreviewOpen, setmobileResponsivePreviewOpen] = useState(false);
+  const [navigationGraphOpen, setnavigationGraphOpen] = useState(false);
+  const [networkConditionSimulatorOpen, setnetworkConditionSimulatorOpen] = useState(false);
+  const [notificationCenterOpen, setnotificationCenterOpen] = useState(false);
+  const [notificationPreferencesOpen, setnotificationPreferencesOpen] = useState(false);
+  const [oAuthProvidersConfigOpen, setoAuthProvidersConfigOpen] = useState(false);
+  const [offlineFirstSyncDesignerOpen, setofflineFirstSyncDesignerOpen] = useState(false);
+  const [onboardingTourOpen, setonboardingTourOpen] = useState(false);
+  const [pIIDataScannerOpen, setpIIDataScannerOpen] = useState(false);
+  const [pageTransitionConfigOpen, setpageTransitionConfigOpen] = useState(false);
+  const [penetrationTestReportGeneratorOpen, setpenetrationTestReportGeneratorOpen] = useState(false);
+  const [performanceProfilerOpen, setperformanceProfilerOpen] = useState(false);
+  const [permissionMatrixVisualizerOpen, setpermissionMatrixVisualizerOpen] = useState(false);
+  const [phonePreviewOpen, setphonePreviewOpen] = useState(false);
+  const [pinnedFavoritesBarOpen, setpinnedFavoritesBarOpen] = useState(false);
+  const [platformAnalyticsOpen, setplatformAnalyticsOpen] = useState(false);
+  const [platformLanguageSwitcherOpen, setplatformLanguageSwitcherOpen] = useState(false);
+  const [predictiveChurnIndicatorOpen, setpredictiveChurnIndicatorOpen] = useState(false);
+  const [pricingStrategyABTesterOpen, setpricingStrategyABTesterOpen] = useState(false);
+  const [privacyPolicyAutoGeneratorOpen, setprivacyPolicyAutoGeneratorOpen] = useState(false);
+  const [projectDashboardOpen, setprojectDashboardOpen] = useState(false);
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
-
+  const [promptScreenOpen, setpromptScreenOpen] = useState(false);
+  const [reducedMotionSettingsOpen, setreducedMotionSettingsOpen] = useState(false);
+  const [referralProgramDesignerOpen, setreferralProgramDesignerOpen] = useState(false);
+  const [regionModalOpen, setregionModalOpen] = useState(false);
+  const [responsiveBreakpointDebuggerOpen, setresponsiveBreakpointDebuggerOpen] = useState(false);
+  const [retinaDisplaySettingsOpen, setretinaDisplaySettingsOpen] = useState(false);
+  const [revenueProjectionEngineOpen, setrevenueProjectionEngineOpen] = useState(false);
+  const [reviewSentimentAnalyzerOpen, setreviewSentimentAnalyzerOpen] = useState(false);
+  const [sMSConfigOpen, setsMSConfigOpen] = useState(false);
+  const [screenFlowOpen, setscreenFlowOpen] = useState(false);
+  const [settingsExportImportOpen, setsettingsExportImportOpen] = useState(false);
+  const [skeletonLoadingPreviewOpen, setskeletonLoadingPreviewOpen] = useState(false);
+  const [smartCacheIndicatorOpen, setsmartCacheIndicatorOpen] = useState(false);
+  const [smartDesignSystemGeneratorOpen, setsmartDesignSystemGeneratorOpen] = useState(false);
+  const [sprintPlannerOpen, setsprintPlannerOpen] = useState(false);
+  const [syntheticUserSimulatorOpen, setsyntheticUserSimulatorOpen] = useState(false);
+  const [templatesGalleryOpen, settemplatesGalleryOpen] = useState(false);
+  const [testPanelOpen, settestPanelOpen] = useState(false);
+  const [themeEditorOpen, setthemeEditorOpen] = useState(false);
+  const [timelineAnimationComposerOpen, settimelineAnimationComposerOpen] = useState(false);
+  const [undoTimelineOpen, setundoTimelineOpen] = useState(false);
+  const [userJourneyMapperOpen, setuserJourneyMapperOpen] = useState(false);
+  const [versionHistoryOpen, setversionHistoryOpen] = useState(false);
+  const [viralCoefficientCalculatorOpen, setviralCoefficientCalculatorOpen] = useState(false);
+  const [visualGestureBuilderOpen, setvisualGestureBuilderOpen] = useState(false);
+  const [visualRegexBuilderOpen, setvisualRegexBuilderOpen] = useState(false);
+  const [visualStateMachineEditorOpen, setvisualStateMachineEditorOpen] = useState(false);
+  const [voiceCommandPanelOpen, setvoiceCommandPanelOpen] = useState(false);
+  const [webSocketEventDesignerOpen, setwebSocketEventDesignerOpen] = useState(false);
+  const [webhookTesterOpen, setWebhookTesterOpen] = useState(false);
+  const [workspaceSwitcherOpen, setworkspaceSwitcherOpen] = useState(false);
+  const [a11yOpen, setA11yOpen] = useState(false);
+  const [abTestingOpen, setAbTestingOpen] = useState(false);
+  const [apiKeysOpen, setApiKeysOpen] = useState(false);
+  const [apiOpen, setApiOpen] = useState(false);
+  const [appConfigOpen, setAppConfigOpen] = useState(false);
+  const [assetOpen, setAssetOpen] = useState(false);
+  const [auditTrailOpen, setAuditTrailOpen] = useState(false);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
+  const [cIPipelineOpen, setCIPipelineOpen] = useState(false);
+  const [cacheOpen, setCacheOpen] = useState(false);
+  const [codeDiffOpen, setCodeDiffOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [customDomainOpen, setCustomDomainOpen] = useState(false);
+  const [dbMigrationOpen, setDbMigrationOpen] = useState(false);
+  const [deepLinkOpen, setDeepLinkOpen] = useState(false);
+  const [deployOpen, setDeployOpen] = useState(false);
+  const [depsOpen, setDepsOpen] = useState(false);
+  const [designTokensOpen, setDesignTokensOpen] = useState(false);
+  const [devicePreviewOpen, setDevicePreviewOpen] = useState(false);
+  const [emailTemplateOpen, setEmailTemplateOpen] = useState(false);
+  const [envVarsOpen, setEnvVarsOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [featureFlagsOpen, setFeatureFlagsOpen] = useState(false);
+  const [healthCheckOpen, setHealthCheckOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [journeyOpen, setJourneyOpen] = useState(false);
+  const [localizationOpen, setLocalizationOpen] = useState(false);
+  const [navGraphOpen, setNavGraphOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [oauthOpen, setOauthOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [pushOpen, setPushOpen] = useState(false);
+  const [rateLimitOpen, setRateLimitOpen] = useState(false);
+  const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
+  const [scheduledOpen, setScheduledOpen] = useState(false);
+  const [screenTemplateOpen, setScreenTemplateOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [securityOpen, setSecurityOpen] = useState(false);
+  const [seedOpen, setSeedOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [smsOpen, setSmsOpen] = useState(false);
+  const [storageOpen, setStorageOpen] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(false);
+  const [typographyOpen, setTypographyOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [webhookOpen, setWebhookOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const buildTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -335,7 +565,7 @@ export default function App() {
     ));
   };
 
-  const handleAddScreenFromTemplate = (template: ScreenTemplateDef) => {
+  const handleAddScreenFromTemplate = (template: any) => {
     if (!project) return;
     const newRegion: AppRegion = {
       id: crypto.randomUUID(),
@@ -737,7 +967,6 @@ export default function App() {
       <ExportPanel open={exportOpen} onClose={() => setExportOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''} />
       <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} commands={commands} />
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} regions={regions} onRegionSelect={setModalRegion} />
-      <AssetManager open={assetOpen} onClose={() => setAssetOpen(false)} />
       <TypographyEditorModal open={typographyOpen} onClose={() => setTypographyOpen(false)} config={typography} onChange={setTypography} colorScheme={colorScheme} />
       <ScreenTemplatePicker open={screenTemplateOpen} onClose={() => setScreenTemplateOpen(false)} onSelect={handleAddScreenFromTemplate} />
       <PushComposer open={pushOpen} onClose={() => setPushOpen(false)} appName={project?.name ?? ''} />
@@ -748,48 +977,127 @@ export default function App() {
       <CommentsPanel open={commentsOpen} onClose={() => setCommentsOpen(false)} regions={regions} />
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} appName={project?.name ?? ''} />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} prefs={prefs} onChange={setPrefs} />
-      <ShortcutsGuide open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} appName={project?.name ?? ''} />
-      <ABTestingPanel open={abTestingOpen} onClose={() => setAbTestingOpen(false)} />
-      <LocalizationEditor open={localizationOpen} onClose={() => setLocalizationOpen(false)} />
-      <FeatureFlagsManager open={featureFlagsOpen} onClose={() => setFeatureFlagsOpen(false)} />
-      <CIPipelineVisualizer open={ciPipelineOpen} onClose={() => setCIPipelineOpen(false)} />
       <UserJourneyMapper open={journeyOpen} onClose={() => setJourneyOpen(false)} regions={regions} />
-      <FormBuilder open={formBuilderOpen} onClose={() => setFormBuilderOpen(false)} />
       <NavigationGraph open={navGraphOpen} onClose={() => setNavGraphOpen(false)} regions={regions} />
-      <WebhookManager open={webhookOpen} onClose={() => setWebhookOpen(false)} />
-      <ScheduledTasks open={scheduledOpen} onClose={() => setScheduledOpen(false)} />
-      <DataExplorer open={dataExplorerOpen} onClose={() => setDataExplorerOpen(false)} />
       <ComponentInspector open={inspectorOpen} onClose={() => setInspectorOpen(false)} regions={regions} />
       <DesignTokensManager open={designTokensOpen} onClose={() => setDesignTokensOpen(false)} colorScheme={colorScheme} />
       <AccessibilityChecker open={a11yOpen} onClose={() => setA11yOpen(false)} regions={regions} colorScheme={colorScheme} />
-      <TeamPanel open={teamOpen} onClose={() => setTeamOpen(false)} />
       <ReleaseNotesGenerator open={releaseNotesOpen} onClose={() => setReleaseNotesOpen(false)} appName={project?.name ?? ''} regions={regions} version="1.0.0" />
       <DeepLinkConfigurator open={deepLinkOpen} onClose={() => setDeepLinkOpen(false)} appName={project?.name ?? ''} regions={regions} />
-      <EnvVarsManager open={envVarsOpen} onClose={() => setEnvVarsOpen(false)} />
       <DevicePreviewSwitcher open={devicePreviewOpen} onClose={() => setDevicePreviewOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''} />
-      <AnalyticsEvents open={analyticsEventsOpen} onClose={() => setAnalyticsEventsOpen(false)} />
-      <SecurityScanner open={securityOpen} onClose={() => setSecurityOpen(false)} />
-      <DatabaseMigrationManager open={dbMigrationOpen} onClose={() => setDbMigrationOpen(false)} />
       <EmailTemplateEditor open={emailTemplateOpen} onClose={() => setEmailTemplateOpen(false)} appName={project?.name ?? ''} />
-      <StorageManager open={storageOpen} onClose={() => setStorageOpen(false)} />
-      <LogViewer open={logViewerOpen} onClose={() => setLogViewerOpen(false)} />
-      <HealthCheckDashboard open={healthCheckOpen} onClose={() => setHealthCheckOpen(false)} />
-      <BackupManager open={backupOpen} onClose={() => setBackupOpen(false)} />
-      <AuditTrailPanel open={auditTrailOpen} onClose={() => setAuditTrailOpen(false)} />
       <CustomDomainConfig open={customDomainOpen} onClose={() => setCustomDomainOpen(false)} appName={project?.name ?? ''} />
-      <OAuthProvidersConfig open={oauthOpen} onClose={() => setOauthOpen(false)} />
-      <RateLimitConfig open={rateLimitOpen} onClose={() => setRateLimitOpen(false)} />
-      <CacheManager open={cacheOpen} onClose={() => setCacheOpen(false)} />
-      <DependencyManager open={depsOpen} onClose={() => setDepsOpen(false)} />
       <AppConfigEditor open={appConfigOpen} onClose={() => setAppConfigOpen(false)} appName={project?.name ?? ''} />
       <BulkActionsPanel open={bulkActionsOpen} onClose={() => setBulkActionsOpen(false)} regions={regions} />
-      <CodeDiffViewer open={codeDiffOpen} onClose={() => setCodeDiffOpen(false)} />
-      <APIKeyManager open={apiKeysOpen} onClose={() => setApiKeysOpen(false)} />
-      <SMSConfig open={smsOpen} onClose={() => setSmsOpen(false)} />
-      <WebhookTester open={webhookTesterOpen} onClose={() => setWebhookTesterOpen(false)} />
-      <IntegrationMarketplace open={integrationsOpen} onClose={() => setIntegrationsOpen(false)} />
       <ProjectSettings open={projectSettingsOpen} onClose={() => setProjectSettingsOpen(false)} project={project} />
+      <ABTestingPanel open={aBTestingPanelOpen} onClose={() => setaBTestingPanelOpen(false)} />
+      <AIAnomalyDetector open={aIAnomalyDetectorOpen} onClose={() => setaIAnomalyDetectorOpen(false)} />
+      <AIAppValuationCalculator open={aIAppValuationCalculatorOpen} onClose={() => setaIAppValuationCalculatorOpen(false)} appName={project?.name ?? ''} />
+      <AICognitiveLoadAnalyzer open={aICognitiveLoadAnalyzerOpen} onClose={() => setaICognitiveLoadAnalyzerOpen(false)} regions={regions} />
+      <AICompetitorGapAnalyzer open={aICompetitorGapAnalyzerOpen} onClose={() => setaICompetitorGapAnalyzerOpen(false)} appName={project?.name ?? ''} />
+      <AICritiquePersona open={aICritiquePersonaOpen} onClose={() => setaICritiquePersonaOpen(false)} regions={regions} appName={project?.name ?? ''} />
+      <AIFrictionScore open={aIFrictionScoreOpen} onClose={() => setaIFrictionScoreOpen(false)} regions={regions} />
+      <AIHeatmapPredictor open={aIHeatmapPredictorOpen} onClose={() => setaIHeatmapPredictorOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''}  />
+      <AIMonetizationStrategist open={aIMonetizationStrategistOpen} onClose={() => setaIMonetizationStrategistOpen(false)} appName={project?.name ?? ''} />
+      <AISecurityPatchRecommender open={aISecurityPatchRecommenderOpen} onClose={() => setaISecurityPatchRecommenderOpen(false)} />
+      <APIKeyManager open={aPIKeyManagerOpen} onClose={() => setaPIKeyManagerOpen(false)} />
+      <AnalyticsEvents open={analyticsEventsOpen} onClose={() => setAnalyticsEventsOpen(false)} />
+      <AppMarketSizingTool open={appMarketSizingToolOpen} onClose={() => setappMarketSizingToolOpen(false)} />
+      <AppStoreRankingPredictor open={appStoreRankingPredictorOpen} onClose={() => setappStoreRankingPredictorOpen(false)} appName={project?.name ?? ''} />
+      <AuditTrailPanel open={auditTrailPanelOpen} onClose={() => setauditTrailPanelOpen(false)} />
+      <BackupManager open={backupManagerOpen} onClose={() => setbackupManagerOpen(false)} />
+      <BatteryImpactProfiler open={batteryImpactProfilerOpen} onClose={() => setbatteryImpactProfilerOpen(false)} regions={regions} />
+      <BundleSizeTreemap open={bundleSizeTreemapOpen} onClose={() => setbundleSizeTreemapOpen(false)} />
+      <CIPipelineVisualizer open={cIPipelineVisualizerOpen} onClose={() => setcIPipelineVisualizerOpen(false)} />
+      <CacheManager open={cacheManagerOpen} onClose={() => setcacheManagerOpen(false)} />
+      <CodeDiffViewer open={codeDiffViewerOpen} onClose={() => setcodeDiffViewerOpen(false)} />
+      <CodeReviewAssignment open={codeReviewAssignmentOpen} onClose={() => setcodeReviewAssignmentOpen(false)} />
+      <CollaborativeEditingPanel open={collaborativeEditingPanelOpen} onClose={() => setcollaborativeEditingPanelOpen(false)} />
+      <ColorPsychologyEngine open={colorPsychologyEngineOpen} onClose={() => setcolorPsychologyEngineOpen(false)} />
+      <CompetitiveLandscapeMapper open={competitiveLandscapeMapperOpen} onClose={() => setcompetitiveLandscapeMapperOpen(false)} />
+      <ComponentStorybook open={componentStorybookOpen} onClose={() => setcomponentStorybookOpen(false)} />
+      <ContextMenuBar open={contextMenuBarOpen} onClose={() => setcontextMenuBarOpen(false)} />
+      <CookieConsentDesigner open={cookieConsentDesignerOpen} onClose={() => setcookieConsentDesignerOpen(false)} />
+      <CrossDeviceScreenshotDiff open={crossDeviceScreenshotDiffOpen} onClose={() => setcrossDeviceScreenshotDiffOpen(false)} />
+      <CustomizableDashboard open={customizableDashboardOpen} onClose={() => setcustomizableDashboardOpen(false)} />
+      <DataExplorer open={dataExplorerOpen} onClose={() => setDataExplorerOpen(false)} />
+      <DataFlowVisualizer open={dataFlowVisualizerOpen} onClose={() => setdataFlowVisualizerOpen(false)} />
+      <DataRetentionPolicyBuilder open={dataRetentionPolicyBuilderOpen} onClose={() => setdataRetentionPolicyBuilderOpen(false)} />
+      <DatabaseMigrationManager open={databaseMigrationManagerOpen} onClose={() => setdatabaseMigrationManagerOpen(false)} />
+      <DependencyManager open={dependencyManagerOpen} onClose={() => setdependencyManagerOpen(false)} />
+      <DesignReviewSystem open={designReviewSystemOpen} onClose={() => setdesignReviewSystemOpen(false)} />
+      <EdgeFunctionVisualBuilder open={edgeFunctionVisualBuilderOpen} onClose={() => setedgeFunctionVisualBuilderOpen(false)} />
+      <EmailDigestSettings open={emailDigestSettingsOpen} onClose={() => setemailDigestSettingsOpen(false)} />
+      <EmptyStateDesigner open={emptyStateDesignerOpen} onClose={() => setemptyStateDesignerOpen(false)} />
+      <EncryptionAuditDashboard open={encryptionAuditDashboardOpen} onClose={() => setencryptionAuditDashboardOpen(false)} />
+      <EnvVarsManager open={envVarsManagerOpen} onClose={() => setenvVarsManagerOpen(false)} />
+      <FeatureFlagsManager open={featureFlagsManagerOpen} onClose={() => setfeatureFlagsManagerOpen(false)} />
+      <FeatureRequestBoard open={featureRequestBoardOpen} onClose={() => setfeatureRequestBoardOpen(false)} />
+      <FeedbackCollector open={feedbackCollectorOpen} onClose={() => setfeedbackCollectorOpen(false)} />
+      <FontSizeAdjuster open={fontSizeAdjusterOpen} onClose={() => setfontSizeAdjusterOpen(false)} />
+      <FormBuilder open={formBuilderOpen} onClose={() => setFormBuilderOpen(false)} />
+      <GDPRComplianceScanner open={gDPRComplianceScannerOpen} onClose={() => setgDPRComplianceScannerOpen(false)} />
+      <GamificationSystem open={gamificationSystemOpen} onClose={() => setgamificationSystemOpen(false)} />
+      <GraphQLSchemaVisualDesigner open={graphQLSchemaVisualDesignerOpen} onClose={() => setgraphQLSchemaVisualDesignerOpen(false)} />
+      <GrowthLoopVisualizer open={growthLoopVisualizerOpen} onClose={() => setgrowthLoopVisualizerOpen(false)} />
+      <HealthCheckDashboard open={healthCheckDashboardOpen} onClose={() => sethealthCheckDashboardOpen(false)} />
+      <ImageCompressionSettings open={imageCompressionSettingsOpen} onClose={() => setimageCompressionSettingsOpen(false)} />
+      <IntegrationMarketplace open={integrationMarketplaceOpen} onClose={() => setintegrationMarketplaceOpen(false)} />
+      <InteractiveRoadmap open={interactiveRoadmapOpen} onClose={() => setinteractiveRoadmapOpen(false)} />
+      <InvestorPitchDeckGenerator open={investorPitchDeckGeneratorOpen} onClose={() => setinvestorPitchDeckGeneratorOpen(false)} appName={project?.name ?? ''} />
+      <KeyboardShortcutsMap open={keyboardShortcutsMapOpen} onClose={() => setkeyboardShortcutsMapOpen(false)} />
+      <LighthouseScorePredictor open={lighthouseScorePredictorOpen} onClose={() => setlighthouseScorePredictorOpen(false)} />
+      <LocalizationEditor open={localizationEditorOpen} onClose={() => setlocalizationEditorOpen(false)} />
+      <LogViewer open={logViewerOpen} onClose={() => setLogViewerOpen(false)} />
+      <MemoryLeakVisualizer open={memoryLeakVisualizerOpen} onClose={() => setmemoryLeakVisualizerOpen(false)} />
+      <MicroInteractionLibrary open={microInteractionLibraryOpen} onClose={() => setmicroInteractionLibraryOpen(false)} />
+      <MiniMapNavigator open={miniMapNavigatorOpen} onClose={() => setminiMapNavigatorOpen(false)} regions={regions} />
+      <MobileResponsivePreview open={mobileResponsivePreviewOpen} onClose={() => setmobileResponsivePreviewOpen(false)} />
+      <NetworkConditionSimulator open={networkConditionSimulatorOpen} onClose={() => setnetworkConditionSimulatorOpen(false)} />
+      <NotificationPreferences open={notificationPreferencesOpen} onClose={() => setnotificationPreferencesOpen(false)} />
+      <OAuthProvidersConfig open={oAuthProvidersConfigOpen} onClose={() => setoAuthProvidersConfigOpen(false)} />
+      <OfflineFirstSyncDesigner open={offlineFirstSyncDesignerOpen} onClose={() => setofflineFirstSyncDesignerOpen(false)} />
+      <OnboardingTour open={onboardingTourOpen} onClose={() => setonboardingTourOpen(false)} />
+      <PIIDataScanner open={pIIDataScannerOpen} onClose={() => setpIIDataScannerOpen(false)} />
+      <PageTransitionConfig open={pageTransitionConfigOpen} onClose={() => setpageTransitionConfigOpen(false)} />
+      <PenetrationTestReportGenerator open={penetrationTestReportGeneratorOpen} onClose={() => setpenetrationTestReportGeneratorOpen(false)} />
+      <PermissionMatrixVisualizer open={permissionMatrixVisualizerOpen} onClose={() => setpermissionMatrixVisualizerOpen(false)} />
+      <PinnedFavoritesBar open={pinnedFavoritesBarOpen} onClose={() => setpinnedFavoritesBarOpen(false)} />
+      <PlatformAnalytics open={platformAnalyticsOpen} onClose={() => setplatformAnalyticsOpen(false)} />
+      <PlatformLanguageSwitcher open={platformLanguageSwitcherOpen} onClose={() => setplatformLanguageSwitcherOpen(false)} />
+      <PredictiveChurnIndicator open={predictiveChurnIndicatorOpen} onClose={() => setpredictiveChurnIndicatorOpen(false)} />
+      <PricingStrategyABTester open={pricingStrategyABTesterOpen} onClose={() => setpricingStrategyABTesterOpen(false)} />
+      <PrivacyPolicyAutoGenerator open={privacyPolicyAutoGeneratorOpen} onClose={() => setprivacyPolicyAutoGeneratorOpen(false)} appName={project?.name ?? ''} />
+      <RateLimitConfig open={rateLimitConfigOpen} onClose={() => setrateLimitConfigOpen(false)} />
+      <ReducedMotionSettings open={reducedMotionSettingsOpen} onClose={() => setreducedMotionSettingsOpen(false)} />
+      <ReferralProgramDesigner open={referralProgramDesignerOpen} onClose={() => setreferralProgramDesignerOpen(false)} />
+      <ResponsiveBreakpointDebugger open={responsiveBreakpointDebuggerOpen} onClose={() => setresponsiveBreakpointDebuggerOpen(false)} colorScheme={colorScheme} appName={project?.name ?? ''} />
+      <RetinaDisplaySettings open={retinaDisplaySettingsOpen} onClose={() => setretinaDisplaySettingsOpen(false)} />
+      <RevenueProjectionEngine open={revenueProjectionEngineOpen} onClose={() => setrevenueProjectionEngineOpen(false)} />
+      <ReviewSentimentAnalyzer open={reviewSentimentAnalyzerOpen} onClose={() => setreviewSentimentAnalyzerOpen(false)} />
+      <SMSConfig open={sMSConfigOpen} onClose={() => setsMSConfigOpen(false)} />
+      <ScheduledTasks open={scheduledTasksOpen} onClose={() => setscheduledTasksOpen(false)} />
+      <SecurityScanner open={securityScannerOpen} onClose={() => setsecurityScannerOpen(false)} />
+      <SettingsExportImport open={settingsExportImportOpen} onClose={() => setsettingsExportImportOpen(false)} />
+      <SkeletonLoadingPreview open={skeletonLoadingPreviewOpen} onClose={() => setskeletonLoadingPreviewOpen(false)} />
+      <SmartCacheIndicator open={smartCacheIndicatorOpen} onClose={() => setsmartCacheIndicatorOpen(false)} />
+      <SmartDesignSystemGenerator open={smartDesignSystemGeneratorOpen} onClose={() => setsmartDesignSystemGeneratorOpen(false)} colorScheme={colorScheme} />
+      <SprintPlanner open={sprintPlannerOpen} onClose={() => setsprintPlannerOpen(false)} />
+      <StorageManager open={storageManagerOpen} onClose={() => setstorageManagerOpen(false)} />
+      <SyntheticUserSimulator open={syntheticUserSimulatorOpen} onClose={() => setsyntheticUserSimulatorOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''} />
+      <TeamPanel open={teamPanelOpen} onClose={() => setteamPanelOpen(false)} />
+      <TimelineAnimationComposer open={timelineAnimationComposerOpen} onClose={() => settimelineAnimationComposerOpen(false)} />
+      <UndoTimeline open={undoTimelineOpen} onClose={() => setundoTimelineOpen(false)} />
+      <ViralCoefficientCalculator open={viralCoefficientCalculatorOpen} onClose={() => setviralCoefficientCalculatorOpen(false)} />
+      <VisualGestureBuilder open={visualGestureBuilderOpen} onClose={() => setvisualGestureBuilderOpen(false)} />
+      <VisualRegexBuilder open={visualRegexBuilderOpen} onClose={() => setvisualRegexBuilderOpen(false)} />
+      <VisualStateMachineEditor open={visualStateMachineEditorOpen} onClose={() => setvisualStateMachineEditorOpen(false)} />
+      <VoiceCommandPanel open={voiceCommandPanelOpen} onClose={() => setvoiceCommandPanelOpen(false)} />
+      <WebSocketEventDesigner open={webSocketEventDesignerOpen} onClose={() => setwebSocketEventDesignerOpen(false)} />
+      <WebhookManager open={webhookManagerOpen} onClose={() => setwebhookManagerOpen(false)} />
+      <WebhookTester open={webhookTesterOpen} onClose={() => setWebhookTesterOpen(false)} />
+      <WorkspaceSwitcher open={workspaceSwitcherOpen} onClose={() => setworkspaceSwitcherOpen(false)} />
     </div>
   );
 }
