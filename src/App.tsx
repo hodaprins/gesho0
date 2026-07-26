@@ -209,6 +209,66 @@ import WebSocketEventDesigner from '@/components/WebSocketEventDesigner';
 import WebhookManager from '@/components/WebhookManager';
 import WebhookTester from '@/components/WebhookTester';
 import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
+import AICodeCompletion from '@/components/AICodeCompletion';
+import ARCoreSceneConfig from '@/components/ARCoreSceneConfig';
+import ARKitSceneConfig from '@/components/ARKitSceneConfig';
+import AVIFConverter from '@/components/AVIFConverter';
+import AWSAmplifySetup from '@/components/AWSAmplifySetup';
+import AndroidKeystoreManager from '@/components/AndroidKeystoreManager';
+import AndroidWidgetBuilder from '@/components/AndroidWidgetBuilder';
+import AppAttestationConfig from '@/components/AppAttestationConfig';
+import AppleWatchBuilder from '@/components/AppleWatchBuilder';
+import BiometricAuthConfig from '@/components/BiometricAuthConfig';
+import ContainerQueriesBuilder from '@/components/ContainerQueriesBuilder';
+import CoreMLModelIntegrator from '@/components/CoreMLModelIntegrator';
+import DarkModeDesigner from '@/components/DarkModeDesigner';
+import DynamicColorThemes from '@/components/DynamicColorThemes';
+import DynamicIslandConfig from '@/components/DynamicIslandConfig';
+import E2EEConfig from '@/components/E2EEConfig';
+import ESLintConfigEditor from '@/components/ESLintConfigEditor';
+import EdgeFunctionDeployer from '@/components/EdgeFunctionDeployer';
+import EnergyMetricsPanel from '@/components/EnergyMetricsPanel';
+import FaceIDConfig from '@/components/FaceIDConfig';
+import FirebaseConfig from '@/components/FirebaseConfig';
+import FoldableSupportConfig from '@/components/FoldableSupportConfig';
+import GitHubActionsBuilder from '@/components/GitHubActionsBuilder';
+import GlassmorphismDesigner from '@/components/GlassmorphismDesigner';
+import GraphQLClientBuilder from '@/components/GraphQLClientBuilder';
+import JetpackComposePreview from '@/components/JetpackComposePreview';
+import KotlinCodeGenerator from '@/components/KotlinCodeGenerator';
+import LiDARScannerConfig from '@/components/LiDARScannerConfig';
+import LottieAnimationImporter from '@/components/LottieAnimationImporter';
+import MLKitIntegrator from '@/components/MLKitIntegrator';
+import MaterialDesign3ThemeBuilder from '@/components/MaterialDesign3ThemeBuilder';
+import MicroInteractionsStudio from '@/components/MicroInteractionsStudio';
+import ModuleFederationConfig from '@/components/ModuleFederationConfig';
+import NFCConfigurator from '@/components/NFCConfigurator';
+import NeumorphismDesigner from '@/components/NeumorphismDesigner';
+import OAuthConfig from '@/components/OAuthConfig';
+import OTAUpdateManager from '@/components/OTAUpdateManager';
+import OnDeviceLLMConfig from '@/components/OnDeviceLLMConfig';
+import PWAConfigurator from '@/components/PWAConfigurator';
+import PredictiveAnalyticsConfig from '@/components/PredictiveAnalyticsConfig';
+import PrettierConfigEditor from '@/components/PrettierConfigEditor';
+import R8ProGuardConfig from '@/components/R8ProGuardConfig';
+import RiveAnimationImporter from '@/components/RiveAnimationImporter';
+import SFSymbolsBrowser from '@/components/SFSymbolsBrowser';
+import SentryConfig from '@/components/SentryConfig';
+import ServiceWorkerManager from '@/components/ServiceWorkerManager';
+import SonarQubeIntegration from '@/components/SonarQubeIntegration';
+import SwiftCodeGenerator from '@/components/SwiftCodeGenerator';
+import SwiftUIPreview from '@/components/SwiftUIPreview';
+import TensorFlowLiteConfig from '@/components/TensorFlowLiteConfig';
+import ViewTransitionsAPI from '@/components/ViewTransitionsAPI';
+import WCAGComplianceChecker from '@/components/WCAGComplianceChecker';
+import WearOSBuilder from '@/components/WearOSBuilder';
+import WebAssemblyCompiler from '@/components/WebAssemblyCompiler';
+import WebNotificationsConfig from '@/components/WebNotificationsConfig';
+import WebRTCConfig from '@/components/WebRTCConfig';
+import WebShareAPITester from '@/components/WebShareAPITester';
+import WebVitalsMonitor from '@/components/WebVitalsMonitor';
+import WidgetKitBuilder from '@/components/WidgetKitBuilder';
+import GRPCServiceBuilder from '@/components/gRPCServiceBuilder';
 import { Target, ShieldCheck, FlaskConical, Globe, Flag, GitBranch as GitBranchIcon, Route, FormInput, Network, Webhook, Clock, Database as DbIconExplore, SlidersHorizontal, Accessibility as A11yIcon, Users, FileText, Link2, KeyRound, Monitor, HardDrive, Mail, Terminal, HeartPulse, HardDriveDownload, ScrollText, Gauge as GaugeIcon, Zap as ZapIcon, Package, Settings2, ListChecks, GitCompare, Store as StoreIcon, Send as SendIcon, MessageSquare as SmsIcon } from 'lucide-react';
 
 type View = 'prompt' | 'builder' | 'dashboard';
@@ -470,6 +530,66 @@ export default function App() {
   const [typographyOpen, setTypographyOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [webhookOpen, setWebhookOpen] = useState(false);
+  const [aICodeCompletionOpen, setaICodeCompletionOpen] = useState(false);
+  const [aRCoreSceneConfigOpen, setaRCoreSceneConfigOpen] = useState(false);
+  const [aRKitSceneConfigOpen, setaRKitSceneConfigOpen] = useState(false);
+  const [aVIFConverterOpen, setaVIFConverterOpen] = useState(false);
+  const [aWSAmplifySetupOpen, setaWSAmplifySetupOpen] = useState(false);
+  const [androidKeystoreManagerOpen, setandroidKeystoreManagerOpen] = useState(false);
+  const [androidWidgetBuilderOpen, setandroidWidgetBuilderOpen] = useState(false);
+  const [appAttestationConfigOpen, setappAttestationConfigOpen] = useState(false);
+  const [appleWatchBuilderOpen, setappleWatchBuilderOpen] = useState(false);
+  const [biometricAuthConfigOpen, setbiometricAuthConfigOpen] = useState(false);
+  const [containerQueriesBuilderOpen, setcontainerQueriesBuilderOpen] = useState(false);
+  const [coreMLModelIntegratorOpen, setcoreMLModelIntegratorOpen] = useState(false);
+  const [darkModeDesignerOpen, setdarkModeDesignerOpen] = useState(false);
+  const [dynamicColorThemesOpen, setdynamicColorThemesOpen] = useState(false);
+  const [dynamicIslandConfigOpen, setdynamicIslandConfigOpen] = useState(false);
+  const [e2EEConfigOpen, sete2EEConfigOpen] = useState(false);
+  const [eSLintConfigEditorOpen, seteSLintConfigEditorOpen] = useState(false);
+  const [edgeFunctionDeployerOpen, setedgeFunctionDeployerOpen] = useState(false);
+  const [energyMetricsPanelOpen, setenergyMetricsPanelOpen] = useState(false);
+  const [faceIDConfigOpen, setfaceIDConfigOpen] = useState(false);
+  const [firebaseConfigOpen, setfirebaseConfigOpen] = useState(false);
+  const [foldableSupportConfigOpen, setfoldableSupportConfigOpen] = useState(false);
+  const [gitHubActionsBuilderOpen, setgitHubActionsBuilderOpen] = useState(false);
+  const [glassmorphismDesignerOpen, setglassmorphismDesignerOpen] = useState(false);
+  const [graphQLClientBuilderOpen, setgraphQLClientBuilderOpen] = useState(false);
+  const [jetpackComposePreviewOpen, setjetpackComposePreviewOpen] = useState(false);
+  const [kotlinCodeGeneratorOpen, setkotlinCodeGeneratorOpen] = useState(false);
+  const [liDARScannerConfigOpen, setliDARScannerConfigOpen] = useState(false);
+  const [lottieAnimationImporterOpen, setlottieAnimationImporterOpen] = useState(false);
+  const [mLKitIntegratorOpen, setmLKitIntegratorOpen] = useState(false);
+  const [materialDesign3ThemeBuilderOpen, setmaterialDesign3ThemeBuilderOpen] = useState(false);
+  const [microInteractionsStudioOpen, setmicroInteractionsStudioOpen] = useState(false);
+  const [moduleFederationConfigOpen, setmoduleFederationConfigOpen] = useState(false);
+  const [nFCConfiguratorOpen, setnFCConfiguratorOpen] = useState(false);
+  const [neumorphismDesignerOpen, setneumorphismDesignerOpen] = useState(false);
+  const [oAuthConfigOpen, setoAuthConfigOpen] = useState(false);
+  const [oTAUpdateManagerOpen, setoTAUpdateManagerOpen] = useState(false);
+  const [onDeviceLLMConfigOpen, setonDeviceLLMConfigOpen] = useState(false);
+  const [pWAConfiguratorOpen, setpWAConfiguratorOpen] = useState(false);
+  const [predictiveAnalyticsConfigOpen, setpredictiveAnalyticsConfigOpen] = useState(false);
+  const [prettierConfigEditorOpen, setprettierConfigEditorOpen] = useState(false);
+  const [r8ProGuardConfigOpen, setr8ProGuardConfigOpen] = useState(false);
+  const [riveAnimationImporterOpen, setriveAnimationImporterOpen] = useState(false);
+  const [sFSymbolsBrowserOpen, setsFSymbolsBrowserOpen] = useState(false);
+  const [sentryConfigOpen, setsentryConfigOpen] = useState(false);
+  const [serviceWorkerManagerOpen, setserviceWorkerManagerOpen] = useState(false);
+  const [sonarQubeIntegrationOpen, setsonarQubeIntegrationOpen] = useState(false);
+  const [swiftCodeGeneratorOpen, setswiftCodeGeneratorOpen] = useState(false);
+  const [swiftUIPreviewOpen, setswiftUIPreviewOpen] = useState(false);
+  const [tensorFlowLiteConfigOpen, settensorFlowLiteConfigOpen] = useState(false);
+  const [viewTransitionsAPIOpen, setviewTransitionsAPIOpen] = useState(false);
+  const [wCAGComplianceCheckerOpen, setwCAGComplianceCheckerOpen] = useState(false);
+  const [wearOSBuilderOpen, setwearOSBuilderOpen] = useState(false);
+  const [webAssemblyCompilerOpen, setwebAssemblyCompilerOpen] = useState(false);
+  const [webNotificationsConfigOpen, setwebNotificationsConfigOpen] = useState(false);
+  const [webRTCConfigOpen, setwebRTCConfigOpen] = useState(false);
+  const [webShareAPITesterOpen, setwebShareAPITesterOpen] = useState(false);
+  const [webVitalsMonitorOpen, setwebVitalsMonitorOpen] = useState(false);
+  const [widgetKitBuilderOpen, setwidgetKitBuilderOpen] = useState(false);
+  const [gRPCServiceBuilderOpen, setGRPCServiceBuilderOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const buildTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -1098,6 +1218,66 @@ export default function App() {
       <WebhookManager open={webhookManagerOpen} onClose={() => setwebhookManagerOpen(false)} />
       <WebhookTester open={webhookTesterOpen} onClose={() => setWebhookTesterOpen(false)} />
       <WorkspaceSwitcher open={workspaceSwitcherOpen} onClose={() => setworkspaceSwitcherOpen(false)} />
+      <AICodeCompletion open={aICodeCompletionOpen} onClose={() => setaICodeCompletionOpen(false)} />
+      <ARCoreSceneConfig open={aRCoreSceneConfigOpen} onClose={() => setaRCoreSceneConfigOpen(false)} />
+      <ARKitSceneConfig open={aRKitSceneConfigOpen} onClose={() => setaRKitSceneConfigOpen(false)} />
+      <AVIFConverter open={aVIFConverterOpen} onClose={() => setaVIFConverterOpen(false)} />
+      <AWSAmplifySetup open={aWSAmplifySetupOpen} onClose={() => setaWSAmplifySetupOpen(false)} />
+      <AndroidKeystoreManager open={androidKeystoreManagerOpen} onClose={() => setandroidKeystoreManagerOpen(false)} />
+      <AndroidWidgetBuilder open={androidWidgetBuilderOpen} onClose={() => setandroidWidgetBuilderOpen(false)} />
+      <AppAttestationConfig open={appAttestationConfigOpen} onClose={() => setappAttestationConfigOpen(false)} />
+      <AppleWatchBuilder open={appleWatchBuilderOpen} onClose={() => setappleWatchBuilderOpen(false)} />
+      <BiometricAuthConfig open={biometricAuthConfigOpen} onClose={() => setbiometricAuthConfigOpen(false)} />
+      <ContainerQueriesBuilder open={containerQueriesBuilderOpen} onClose={() => setcontainerQueriesBuilderOpen(false)} />
+      <CoreMLModelIntegrator open={coreMLModelIntegratorOpen} onClose={() => setcoreMLModelIntegratorOpen(false)} />
+      <DarkModeDesigner open={darkModeDesignerOpen} onClose={() => setdarkModeDesignerOpen(false)} />
+      <DynamicColorThemes open={dynamicColorThemesOpen} onClose={() => setdynamicColorThemesOpen(false)} />
+      <DynamicIslandConfig open={dynamicIslandConfigOpen} onClose={() => setdynamicIslandConfigOpen(false)} />
+      <E2EEConfig open={e2EEConfigOpen} onClose={() => sete2EEConfigOpen(false)} />
+      <ESLintConfigEditor open={eSLintConfigEditorOpen} onClose={() => seteSLintConfigEditorOpen(false)} />
+      <EdgeFunctionDeployer open={edgeFunctionDeployerOpen} onClose={() => setedgeFunctionDeployerOpen(false)} />
+      <EnergyMetricsPanel open={energyMetricsPanelOpen} onClose={() => setenergyMetricsPanelOpen(false)} />
+      <FaceIDConfig open={faceIDConfigOpen} onClose={() => setfaceIDConfigOpen(false)} />
+      <FirebaseConfig open={firebaseConfigOpen} onClose={() => setfirebaseConfigOpen(false)} />
+      <FoldableSupportConfig open={foldableSupportConfigOpen} onClose={() => setfoldableSupportConfigOpen(false)} />
+      <GitHubActionsBuilder open={gitHubActionsBuilderOpen} onClose={() => setgitHubActionsBuilderOpen(false)} />
+      <GlassmorphismDesigner open={glassmorphismDesignerOpen} onClose={() => setglassmorphismDesignerOpen(false)} />
+      <GraphQLClientBuilder open={graphQLClientBuilderOpen} onClose={() => setgraphQLClientBuilderOpen(false)} />
+      <JetpackComposePreview open={jetpackComposePreviewOpen} onClose={() => setjetpackComposePreviewOpen(false)} />
+      <KotlinCodeGenerator open={kotlinCodeGeneratorOpen} onClose={() => setkotlinCodeGeneratorOpen(false)} />
+      <LiDARScannerConfig open={liDARScannerConfigOpen} onClose={() => setliDARScannerConfigOpen(false)} />
+      <LottieAnimationImporter open={lottieAnimationImporterOpen} onClose={() => setlottieAnimationImporterOpen(false)} />
+      <MLKitIntegrator open={mLKitIntegratorOpen} onClose={() => setmLKitIntegratorOpen(false)} />
+      <MaterialDesign3ThemeBuilder open={materialDesign3ThemeBuilderOpen} onClose={() => setmaterialDesign3ThemeBuilderOpen(false)} />
+      <MicroInteractionsStudio open={microInteractionsStudioOpen} onClose={() => setmicroInteractionsStudioOpen(false)} />
+      <ModuleFederationConfig open={moduleFederationConfigOpen} onClose={() => setmoduleFederationConfigOpen(false)} />
+      <NFCConfigurator open={nFCConfiguratorOpen} onClose={() => setnFCConfiguratorOpen(false)} />
+      <NeumorphismDesigner open={neumorphismDesignerOpen} onClose={() => setneumorphismDesignerOpen(false)} />
+      <OAuthConfig open={oAuthConfigOpen} onClose={() => setoAuthConfigOpen(false)} />
+      <OTAUpdateManager open={oTAUpdateManagerOpen} onClose={() => setoTAUpdateManagerOpen(false)} />
+      <OnDeviceLLMConfig open={onDeviceLLMConfigOpen} onClose={() => setonDeviceLLMConfigOpen(false)} />
+      <PWAConfigurator open={pWAConfiguratorOpen} onClose={() => setpWAConfiguratorOpen(false)} />
+      <PredictiveAnalyticsConfig open={predictiveAnalyticsConfigOpen} onClose={() => setpredictiveAnalyticsConfigOpen(false)} />
+      <PrettierConfigEditor open={prettierConfigEditorOpen} onClose={() => setprettierConfigEditorOpen(false)} />
+      <R8ProGuardConfig open={r8ProGuardConfigOpen} onClose={() => setr8ProGuardConfigOpen(false)} />
+      <RiveAnimationImporter open={riveAnimationImporterOpen} onClose={() => setriveAnimationImporterOpen(false)} />
+      <SFSymbolsBrowser open={sFSymbolsBrowserOpen} onClose={() => setsFSymbolsBrowserOpen(false)} />
+      <SentryConfig open={sentryConfigOpen} onClose={() => setsentryConfigOpen(false)} />
+      <ServiceWorkerManager open={serviceWorkerManagerOpen} onClose={() => setserviceWorkerManagerOpen(false)} />
+      <SonarQubeIntegration open={sonarQubeIntegrationOpen} onClose={() => setsonarQubeIntegrationOpen(false)} />
+      <SwiftCodeGenerator open={swiftCodeGeneratorOpen} onClose={() => setswiftCodeGeneratorOpen(false)} />
+      <SwiftUIPreview open={swiftUIPreviewOpen} onClose={() => setswiftUIPreviewOpen(false)} />
+      <TensorFlowLiteConfig open={tensorFlowLiteConfigOpen} onClose={() => settensorFlowLiteConfigOpen(false)} />
+      <ViewTransitionsAPI open={viewTransitionsAPIOpen} onClose={() => setviewTransitionsAPIOpen(false)} />
+      <WCAGComplianceChecker open={wCAGComplianceCheckerOpen} onClose={() => setwCAGComplianceCheckerOpen(false)} />
+      <WearOSBuilder open={wearOSBuilderOpen} onClose={() => setwearOSBuilderOpen(false)} />
+      <WebAssemblyCompiler open={webAssemblyCompilerOpen} onClose={() => setwebAssemblyCompilerOpen(false)} />
+      <WebNotificationsConfig open={webNotificationsConfigOpen} onClose={() => setwebNotificationsConfigOpen(false)} />
+      <WebRTCConfig open={webRTCConfigOpen} onClose={() => setwebRTCConfigOpen(false)} />
+      <WebShareAPITester open={webShareAPITesterOpen} onClose={() => setwebShareAPITesterOpen(false)} />
+      <WebVitalsMonitor open={webVitalsMonitorOpen} onClose={() => setwebVitalsMonitorOpen(false)} />
+      <WidgetKitBuilder open={widgetKitBuilderOpen} onClose={() => setwidgetKitBuilderOpen(false)} />
+      <GRPCServiceBuilder open={gRPCServiceBuilderOpen} onClose={() => setGRPCServiceBuilderOpen(false)} />
     </div>
   );
 }
