@@ -1,855 +1,1082 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+/* =============================================================================
+ * App.tsx — AppForge main application
+ *
+ * Owns the top-level view router and all shared app state:
+ *   - view:           prompt | dashboard | builder
+ *   - project:        the currently active Project (or null)
+ *   - stages:         BuildStage[] for the active project
+ *   - regions:        AppRegion[] (screens) for the active project
+ *   - activeTab:      which builder tab is shown
+ *   - colorScheme:    active palette
+ *   - modal open flags, sidebar/command/search state, build log streaming
+ *
+ * Sections:
+ *   1. Imports
+ *   2. Constants & static data (build stages, color schemes)
+ *   3. Screen generation helpers
+ *   4. Utility helpers
+ *   5. App component — state
+ *   6. App component — key actions (start, build pipeline, open, new, etc.)
+ *   7. App component — keyboard shortcuts
+ *   8. App component — render (prompt / dashboard / builder)
+ *   9. Builder sub-components (toolbar, sidebar, tab panels)
+ *  10. Modal placeholder layer
+ * ========================================================================== */
+
 import {
-  Sparkles,
-  Loader2,
-  Rocket,
-  CheckCircle2,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  type ReactNode,
+} from 'react';
+import {
   Palette,
   Code2,
   Database as DatabaseIcon,
-  TestTube,
-  Rocket as DeployIcon,
-  Gauge,
-  Bot,
-  LayoutGrid,
-  Layers,
-  Workflow,
-  BarChart3,
-  Store,
-  GitBranch,
-  ArrowRight,
-  Bell,
-  Search as SearchIcon,
-  Settings as SettingsIcon,
-  Keyboard,
-  Share2,
+  FlaskConical,
+  ClipboardCheck,
+  Rocket,
+  Download,
+  Table,
   Command as CommandIcon,
-  Image as ImageIcon,
+  Search,
+  Settings,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Check,
+  Circle,
+  Loader2,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Plus,
+  Sparkles,
+  ArrowRight,
+  FileCode,
+  Boxes,
+  Layers,
+  Eye,
+  GitBranch,
+  Terminal,
+  ShieldCheck,
+  Globe,
   Type,
+  Image as ImageIcon,
+  Bell,
   LayoutTemplate,
-  Send,
-  Bug,
-  MessageSquare,
+  Droplet,
+  BarChart3,
+  Users,
+  GitPullRequest,
+  Link2,
+  KeyRound,
+  Lock,
   Activity,
-  TrendingUp,
+  MessageSquare,
+  Accessibility,
+  ScanLine,
+  CalendarClock,
+  FileText,
+  Workflow,
+  Flag,
+  Languages,
+  Globe2,
+  Network,
+  Route,
   Zap,
+  Gauge,
+  Package,
+  SlidersHorizontal,
+  Repeat2,
+  Diff,
+  Mail,
+  MessageSquareText,
+  Plug,
+  BellRing,
+  ScrollText,
+  Stethoscope,
+  Archive,
+  ListChecks,
 } from 'lucide-react';
+
 import { supabase } from '@/lib/supabase';
-import {
-  parsePrompt,
-  STAGE_DEFINITIONS,
-  stageLogs,
-  platformLabel,
-} from '@/lib/appEngine';
 import type {
-  AppRegion,
-  BuildStage,
-  Platform,
   Project,
-  StageType,
-  BuilderTab,
-  ColorScheme,
+  BuildStage,
+  AppRegion,
+  ScreenSpec,
   ScreenElement,
-} from '@/types/builder';
-import CommandPalette, { type Command } from '@/components/CommandPalette';
-import TypographyEditor, { type TypographyConfig } from '@/components/TypographyEditor';
-import SettingsPanel, { type UserPreferences } from '@/components/SettingsPanel';
-import { useHistory } from '@/lib/useHistory';
-import ABTestingPanel from '@/components/ABTestingPanel';
-import AIAnomalyDetector from '@/components/AIAnomalyDetector';
-import AIAppValuationCalculator from '@/components/AIAppValuationCalculator';
-import AIChat from '@/components/AIChat';
-import AICognitiveLoadAnalyzer from '@/components/AICognitiveLoadAnalyzer';
-import AICompetitorGapAnalyzer from '@/components/AICompetitorGapAnalyzer';
-import AICritiquePersona from '@/components/AICritiquePersona';
-import AIFrictionScore from '@/components/AIFrictionScore';
-import AIHeatmapPredictor from '@/components/AIHeatmapPredictor';
-import AIMonetizationStrategist from '@/components/AIMonetizationStrategist';
-import AISecurityPatchRecommender from '@/components/AISecurityPatchRecommender';
-import APIKeyManager from '@/components/APIKeyManager';
-import AccessibilityChecker from '@/components/AccessibilityChecker';
-import ActivityLog from '@/components/ActivityLog';
-import AnalyticsDashboard from '@/components/AnalyticsDashboard';
-import AnalyticsEvents from '@/components/AnalyticsEvents';
-import ApiExplorer from '@/components/ApiExplorer';
-import AppConfigEditor from '@/components/AppConfigEditor';
-import AppMarketSizingTool from '@/components/AppMarketSizingTool';
-import AppStoreAssets from '@/components/AppStoreAssets';
-import AppStoreRankingPredictor from '@/components/AppStoreRankingPredictor';
-import AssetManager from '@/components/AssetManager';
-import AuditPanel from '@/components/AuditPanel';
-import AuditTrailPanel from '@/components/AuditTrailPanel';
-import BackupManager from '@/components/BackupManager';
-import BatteryImpactProfiler from '@/components/BatteryImpactProfiler';
-import BuildMetrics from '@/components/BuildMetrics';
-import BuildStages from '@/components/BuildStages';
-import BulkActionsPanel from '@/components/BulkActionsPanel';
-import BundleSizeTreemap from '@/components/BundleSizeTreemap';
-import CIPipelineVisualizer from '@/components/CIPipelineVisualizer';
-import CacheManager from '@/components/CacheManager';
-import CodeDiffViewer from '@/components/CodeDiffViewer';
-import { CodeReviewAssignment } from '@/components/CodeReviewAssignment';
-import CodeViewer from '@/components/CodeViewer';
-import { CollaborativeEditingPanel } from '@/components/CollaborativeEditingPanel';
-import ColorPsychologyEngine from '@/components/ColorPsychologyEngine';
-import CommentsPanel from '@/components/CommentsPanel';
-import CompetitiveLandscapeMapper from '@/components/CompetitiveLandscapeMapper';
-import ComponentInspector from '@/components/ComponentInspector';
-import ComponentLibrary from '@/components/ComponentLibrary';
-import ComponentStorybook from '@/components/ComponentStorybook';
-import ContextMenuBar from '@/components/ContextMenuBar';
-import CookieConsentDesigner from '@/components/CookieConsentDesigner';
-import CrossDeviceScreenshotDiff from '@/components/CrossDeviceScreenshotDiff';
-import CustomDomainConfig from '@/components/CustomDomainConfig';
-import CustomizableDashboard from '@/components/CustomizableDashboard';
-import DataExplorer from '@/components/DataExplorer';
-import DataFlowVisualizer from '@/components/DataFlowVisualizer';
-import DataRetentionPolicyBuilder from '@/components/DataRetentionPolicyBuilder';
-import DatabaseMigrationManager from '@/components/DatabaseMigrationManager';
-import DeepLinkConfigurator from '@/components/DeepLinkConfigurator';
-import DependencyManager from '@/components/DependencyManager';
-import DeployDialog from '@/components/DeployDialog';
-import { DesignReviewSystem } from '@/components/DesignReviewSystem';
-import DesignTokensManager from '@/components/DesignTokensManager';
-import DevicePreviewSwitcher from '@/components/DevicePreviewSwitcher';
-import EdgeFunctionVisualBuilder from '@/components/EdgeFunctionVisualBuilder';
-import EmailDigestSettings from '@/components/EmailDigestSettings';
-import EmailTemplateEditor from '@/components/EmailTemplateEditor';
-import EmptyStateDesigner from '@/components/EmptyStateDesigner';
-import EncryptionAuditDashboard from '@/components/EncryptionAuditDashboard';
-import EnvVarsManager from '@/components/EnvVarsManager';
-import ErrorMonitor from '@/components/ErrorMonitor';
-import ExportPanel from '@/components/ExportPanel';
-import FeatureFlagsManager from '@/components/FeatureFlagsManager';
-import { FeatureRequestBoard } from '@/components/FeatureRequestBoard';
-import { FeedbackCollector } from '@/components/FeedbackCollector';
-import FontSizeAdjuster from '@/components/FontSizeAdjuster';
-import FormBuilder from '@/components/FormBuilder';
-import GDPRComplianceScanner from '@/components/GDPRComplianceScanner';
-import GamificationSystem from '@/components/GamificationSystem';
-import GlobalSearch from '@/components/GlobalSearch';
-import GraphQLSchemaVisualDesigner from '@/components/GraphQLSchemaVisualDesigner';
-import GrowthLoopVisualizer from '@/components/GrowthLoopVisualizer';
-import Header from '@/components/Header';
-import HealthCheckDashboard from '@/components/HealthCheckDashboard';
-import ImageCompressionSettings from '@/components/ImageCompressionSettings';
-import IntegrationMarketplace from '@/components/IntegrationMarketplace';
-import { InteractiveRoadmap } from '@/components/InteractiveRoadmap';
-import InvestorPitchDeckGenerator from '@/components/InvestorPitchDeckGenerator';
-import KeyboardShortcutsMap from '@/components/KeyboardShortcutsMap';
-import LighthouseScorePredictor from '@/components/LighthouseScorePredictor';
-import LocalizationEditor from '@/components/LocalizationEditor';
-import LogViewer from '@/components/LogViewer';
-import MemoryLeakVisualizer from '@/components/MemoryLeakVisualizer';
-import MicroInteractionLibrary from '@/components/MicroInteractionLibrary';
-import MiniMapNavigator from '@/components/MiniMapNavigator';
-import MobileResponsivePreview from '@/components/MobileResponsivePreview';
-import NavigationGraph from '@/components/NavigationGraph';
-import NetworkConditionSimulator from '@/components/NetworkConditionSimulator';
-import NotificationCenter from '@/components/NotificationCenter';
-import NotificationPreferences from '@/components/NotificationPreferences';
-import OAuthProvidersConfig from '@/components/OAuthProvidersConfig';
-import OfflineFirstSyncDesigner from '@/components/OfflineFirstSyncDesigner';
-import OnboardingBuilder from '@/components/OnboardingBuilder';
-import OnboardingTour from '@/components/OnboardingTour';
-import PIIDataScanner from '@/components/PIIDataScanner';
-import PageTransitionConfig from '@/components/PageTransitionConfig';
-import PenetrationTestReportGenerator from '@/components/PenetrationTestReportGenerator';
-import PerformanceProfiler from '@/components/PerformanceProfiler';
-import PermissionMatrixVisualizer from '@/components/PermissionMatrixVisualizer';
-import PhonePreview from '@/components/PhonePreview';
-import { PinnedFavoritesBar } from '@/components/PinnedFavoritesBar';
-import { PlatformAnalytics } from '@/components/PlatformAnalytics';
-import PlatformLanguageSwitcher from '@/components/PlatformLanguageSwitcher';
-import PredictiveChurnIndicator from '@/components/PredictiveChurnIndicator';
-import PricingStrategyABTester from '@/components/PricingStrategyABTester';
-import PrivacyPolicyAutoGenerator from '@/components/PrivacyPolicyAutoGenerator';
-import ProjectDashboard from '@/components/ProjectDashboard';
-import ProjectSettings from '@/components/ProjectSettings';
+  ColorScheme,
+  BuilderTab,
+} from '@/lib/types';
 import PromptScreen from '@/components/PromptScreen';
-import PushComposer from '@/components/PushComposer';
-import RateLimitConfig from '@/components/RateLimitConfig';
-import ReducedMotionSettings from '@/components/ReducedMotionSettings';
-import ReferralProgramDesigner from '@/components/ReferralProgramDesigner';
-import RegionModal from '@/components/RegionModal';
-import ReleaseNotesGenerator from '@/components/ReleaseNotesGenerator';
-import ResponsiveBreakpointDebugger from '@/components/ResponsiveBreakpointDebugger';
-import RetinaDisplaySettings from '@/components/RetinaDisplaySettings';
-import RevenueProjectionEngine from '@/components/RevenueProjectionEngine';
-import ReviewSentimentAnalyzer from '@/components/ReviewSentimentAnalyzer';
-import SMSConfig from '@/components/SMSConfig';
-import ScheduledTasks from '@/components/ScheduledTasks';
-import ScreenFlow from '@/components/ScreenFlow';
-import ScreenTemplatePicker from '@/components/ScreenTemplatePicker';
-import SecurityScanner from '@/components/SecurityScanner';
-import SeedDataPanel from '@/components/SeedDataPanel';
-import SettingsExportImport from '@/components/SettingsExportImport';
-import ShareDialog from '@/components/ShareDialog';
-import ShortcutsGuide from '@/components/ShortcutsGuide';
-import SkeletonLoadingPreview from '@/components/SkeletonLoadingPreview';
-import SmartCacheIndicator from '@/components/SmartCacheIndicator';
-import SmartDesignSystemGenerator from '@/components/SmartDesignSystemGenerator';
-import { SprintPlanner } from '@/components/SprintPlanner';
-import StorageManager from '@/components/StorageManager';
-import SyntheticUserSimulator from '@/components/SyntheticUserSimulator';
-import TeamPanel from '@/components/TeamPanel';
-import TemplatesGallery from '@/components/TemplatesGallery';
-import TestPanel from '@/components/TestPanel';
-import ThemeEditor from '@/components/ThemeEditor';
-import TimelineAnimationComposer from '@/components/TimelineAnimationComposer';
-import UndoTimeline from '@/components/UndoTimeline';
-import UserJourneyMapper from '@/components/UserJourneyMapper';
-import VersionHistory from '@/components/VersionHistory';
-import ViralCoefficientCalculator from '@/components/ViralCoefficientCalculator';
-import VisualGestureBuilder from '@/components/VisualGestureBuilder';
-import VisualRegexBuilder from '@/components/VisualRegexBuilder';
-import VisualStateMachineEditor from '@/components/VisualStateMachineEditor';
-import VoiceCommandPanel from '@/components/VoiceCommandPanel';
-import WebSocketEventDesigner from '@/components/WebSocketEventDesigner';
-import WebhookManager from '@/components/WebhookManager';
-import WebhookTester from '@/components/WebhookTester';
-import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
-import AICodeCompletion from '@/components/AICodeCompletion';
-import ARCoreSceneConfig from '@/components/ARCoreSceneConfig';
-import ARKitSceneConfig from '@/components/ARKitSceneConfig';
-import AVIFConverter from '@/components/AVIFConverter';
-import AWSAmplifySetup from '@/components/AWSAmplifySetup';
-import AndroidKeystoreManager from '@/components/AndroidKeystoreManager';
-import AndroidWidgetBuilder from '@/components/AndroidWidgetBuilder';
-import AppAttestationConfig from '@/components/AppAttestationConfig';
-import AppleWatchBuilder from '@/components/AppleWatchBuilder';
-import BiometricAuthConfig from '@/components/BiometricAuthConfig';
-import ContainerQueriesBuilder from '@/components/ContainerQueriesBuilder';
-import CoreMLModelIntegrator from '@/components/CoreMLModelIntegrator';
-import DarkModeDesigner from '@/components/DarkModeDesigner';
-import DynamicColorThemes from '@/components/DynamicColorThemes';
-import DynamicIslandConfig from '@/components/DynamicIslandConfig';
-import E2EEConfig from '@/components/E2EEConfig';
-import ESLintConfigEditor from '@/components/ESLintConfigEditor';
-import EdgeFunctionDeployer from '@/components/EdgeFunctionDeployer';
-import EnergyMetricsPanel from '@/components/EnergyMetricsPanel';
-import FaceIDConfig from '@/components/FaceIDConfig';
-import FirebaseConfig from '@/components/FirebaseConfig';
-import FoldableSupportConfig from '@/components/FoldableSupportConfig';
-import GitHubActionsBuilder from '@/components/GitHubActionsBuilder';
-import GlassmorphismDesigner from '@/components/GlassmorphismDesigner';
-import GraphQLClientBuilder from '@/components/GraphQLClientBuilder';
-import JetpackComposePreview from '@/components/JetpackComposePreview';
-import KotlinCodeGenerator from '@/components/KotlinCodeGenerator';
-import LiDARScannerConfig from '@/components/LiDARScannerConfig';
-import LottieAnimationImporter from '@/components/LottieAnimationImporter';
-import MLKitIntegrator from '@/components/MLKitIntegrator';
-import MaterialDesign3ThemeBuilder from '@/components/MaterialDesign3ThemeBuilder';
-import MicroInteractionsStudio from '@/components/MicroInteractionsStudio';
-import ModuleFederationConfig from '@/components/ModuleFederationConfig';
-import NFCConfigurator from '@/components/NFCConfigurator';
-import NeumorphismDesigner from '@/components/NeumorphismDesigner';
-import OAuthConfig from '@/components/OAuthConfig';
-import OTAUpdateManager from '@/components/OTAUpdateManager';
-import OnDeviceLLMConfig from '@/components/OnDeviceLLMConfig';
-import PWAConfigurator from '@/components/PWAConfigurator';
-import PredictiveAnalyticsConfig from '@/components/PredictiveAnalyticsConfig';
-import PrettierConfigEditor from '@/components/PrettierConfigEditor';
-import R8ProGuardConfig from '@/components/R8ProGuardConfig';
-import RiveAnimationImporter from '@/components/RiveAnimationImporter';
-import SFSymbolsBrowser from '@/components/SFSymbolsBrowser';
-import SentryConfig from '@/components/SentryConfig';
-import ServiceWorkerManager from '@/components/ServiceWorkerManager';
-import SonarQubeIntegration from '@/components/SonarQubeIntegration';
-import SwiftCodeGenerator from '@/components/SwiftCodeGenerator';
-import SwiftUIPreview from '@/components/SwiftUIPreview';
-import TensorFlowLiteConfig from '@/components/TensorFlowLiteConfig';
-import ViewTransitionsAPI from '@/components/ViewTransitionsAPI';
-import WCAGComplianceChecker from '@/components/WCAGComplianceChecker';
-import WearOSBuilder from '@/components/WearOSBuilder';
-import WebAssemblyCompiler from '@/components/WebAssemblyCompiler';
-import WebNotificationsConfig from '@/components/WebNotificationsConfig';
-import WebRTCConfig from '@/components/WebRTCConfig';
-import WebShareAPITester from '@/components/WebShareAPITester';
-import WebVitalsMonitor from '@/components/WebVitalsMonitor';
-import WidgetKitBuilder from '@/components/WidgetKitBuilder';
-import GRPCServiceBuilder from '@/components/gRPCServiceBuilder';
-import { Target, ShieldCheck, FlaskConical, Globe, Flag, GitBranch as GitBranchIcon, Route, FormInput, Network, Webhook, Clock, Database as DbIconExplore, SlidersHorizontal, Accessibility as A11yIcon, Users, FileText, Link2, KeyRound, Monitor, HardDrive, Mail, Terminal, HeartPulse, HardDriveDownload, ScrollText, Gauge as GaugeIcon, Zap as ZapIcon, Package, Settings2, ListChecks, GitCompare, Store as StoreIcon, Send as SendIcon, MessageSquare as SmsIcon } from 'lucide-react';
+import Header from '@/components/Header';
+import ProjectDashboard from '@/components/ProjectDashboard';
 
-type View = 'prompt' | 'builder' | 'dashboard';
+/* ===========================================================================
+ * 2. Constants & static data
+ * ========================================================================= */
 
-const BUILDER_TABS: { id: BuilderTab; label: string; icon: React.ReactNode }[] = [
-  { id: 'design', label: 'Design', icon: <Palette className="w-3.5 h-3.5" /> },
-  { id: 'code', label: 'Code', icon: <Code2 className="w-3.5 h-3.5" /> },
-  { id: 'database', label: 'Data', icon: <DatabaseIcon className="w-3.5 h-3.5" /> },
-  { id: 'test', label: 'Tests', icon: <TestTube className="w-3.5 h-3.5" /> },
-  { id: 'audit', label: 'Audit', icon: <Gauge className="w-3.5 h-3.5" /> },
-  { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-3.5 h-3.5" /> },
-  { id: 'performance', label: 'Profiler', icon: <Zap className="w-3.5 h-3.5" /> },
-  { id: 'deploy', label: 'Deploy', icon: <DeployIcon className="w-3.5 h-3.5" /> },
+type AppView = 'prompt' | 'dashboard' | 'builder';
+
+interface StageDefinition {
+  name: string;
+  type: string;
+  logs: string[];
+}
+
+/** The six canonical build stages, in execution order. */
+const BUILD_STAGES: StageDefinition[] = [
+  {
+    name: 'Architecture',
+    type: 'architecture',
+    logs: [
+      'Analyzing prompt and selecting app scaffold…',
+      'Choosing navigation pattern (tab bar + modal stack)…',
+      'Defining module boundaries and dependency graph…',
+      'Architecture blueprint locked. ✓',
+    ],
+  },
+  {
+    name: 'UI Components',
+    type: 'ui',
+    logs: [
+      'Generating design tokens from color scheme…',
+      'Scaffolding shared components (Button, Card, Input, List)…',
+      'Composing screen layouts from element specs…',
+      'Theming components with active palette…',
+      'UI component library ready. ✓',
+    ],
+  },
+  {
+    name: 'API Layer',
+    type: 'api',
+    logs: [
+      'Inferring data entities from screens…',
+      'Generating typed API client + endpoints…',
+      'Wiring auth + row-level security policies…',
+      'API layer generated. ✓',
+    ],
+  },
+  {
+    name: 'Database',
+    type: 'database',
+    logs: [
+      'Creating tables and relationships…',
+      'Adding indexes for common query paths…',
+      'Enabling Row Level Security…',
+      'Seeding reference data…',
+      'Database schema applied. ✓',
+    ],
+  },
+  {
+    name: 'Testing',
+    type: 'testing',
+    logs: [
+      'Generating unit tests for components…',
+      'Generating integration tests for API flows…',
+      'Running test suite…',
+      'All tests passing. ✓',
+    ],
+  },
+  {
+    name: 'Deployment',
+    type: 'deployment',
+    logs: [
+      'Bundling production assets…',
+      'Uploading to edge network…',
+      'Provisioning preview environment…',
+      'Deployment ready. ✓',
+    ],
+  },
 ];
 
-const DEFAULT_PREFS: UserPreferences = {
-  theme: 'dark',
-  language: 'en',
-  autoSave: true,
-  showGrid: false,
-  reducedMotion: false,
-  defaultPlatform: 'both',
-  codeFontSize: 13,
-};
+interface ColorSchemeDefinition {
+  id: string;
+  name: string;
+  scheme: ColorScheme;
+  preview: string;
+}
 
-const DEFAULT_TYPOGRAPHY: TypographyConfig = {
-  fontFamily: 'Inter, system-ui, sans-serif',
-  headingSize: 24,
-  bodySize: 14,
-  headingWeight: 700,
-  bodyWeight: 400,
-  lineHeight: 1.5,
-  letterSpacing: 0,
-};
+/** Four switchable color schemes. */
+const COLOR_SCHEMES: ColorSchemeDefinition[] = [
+  {
+    id: 'emerald',
+    name: 'Emerald',
+    preview: 'from-emerald-400 to-teal-500',
+    scheme: {
+      primary: '#10b981',
+      secondary: '#14b8a6',
+      accent: '#06b6d4',
+      background: '#0b1120',
+      surface: '#111827',
+      text: '#e2e8f0',
+    },
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean',
+    preview: 'from-sky-400 to-blue-500',
+    scheme: {
+      primary: '#0ea5e9',
+      secondary: '#3b82f6',
+      accent: '#6366f1',
+      background: '#0b1120',
+      surface: '#111827',
+      text: '#e2e8f0',
+    },
+  },
+  {
+    id: 'sunset',
+    name: 'Sunset',
+    preview: 'from-orange-400 to-rose-500',
+    scheme: {
+      primary: '#f97316',
+      secondary: '#f43f5e',
+      accent: '#eab308',
+      background: '#1a1025',
+      surface: '#241430',
+      text: '#f5e9f0',
+    },
+  },
+  {
+    id: 'mono',
+    name: 'Mono',
+    preview: 'from-slate-300 to-slate-500',
+    scheme: {
+      primary: '#e2e8f0',
+      secondary: '#94a3b8',
+      accent: '#cbd5e1',
+      background: '#0b0f1a',
+      surface: '#141a28',
+      text: '#e2e8f0',
+    },
+  },
+];
 
-export default function App() {
-  const [view, setView] = useState<View>('prompt');
-  const [project, setProject] = useState<Project | null>(null);
-  const [stages, setStages] = useState<BuildStage[]>([]);
-  const { state: regions, set: setRegions, undo, redo, canUndo, canRedo } = useHistory<AppRegion[]>([]);
-  const [activeLog, setActiveLog] = useState('');
-  const [modalRegion, setModalRegion] = useState<AppRegion | null>(null);
-  const [recentProjectName, setRecentProjectName] = useState<string>();
-  const [activeTab, setActiveTab] = useState<BuilderTab>('design');
-  const [colorScheme, setColorScheme] = useState<ColorScheme>({
-    primary: '#0f766e', secondary: '#14b8a6', accent: '#f59e0b',
-    background: '#f0fdfa', surface: '#ffffff', text: '#042f2e',
+const DEFAULT_COLOR_SCHEME = COLOR_SCHEMES[0];
+
+/* ===========================================================================
+ * 3. Screen generation helpers
+ * ========================================================================= */
+
+/** Derive a compact app name from the raw prompt. */
+function deriveAppName(prompt: string): string {
+  const cleaned = prompt.trim().toLowerCase();
+  const stop = new Set([
+    'a', 'an', 'the', 'app', 'with', 'for', 'and', 'that', 'to', 'of', 'my',
+    'your', 'simple', 'beautiful', 'modern', 'simple', 'easy',
+  ]);
+  const words = cleaned
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w && !stop.has(w));
+  if (words.length === 0) return 'Untitled App';
+  const name = words.slice(0, 3).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+  return name || 'Untitled App';
+}
+
+/** Detect an app_type string from the prompt for the Project record. */
+function detectAppType(prompt: string, platform: string): string {
+  const p = prompt.toLowerCase();
+  if (/\b(api|backend|service|webhook|server)\b/.test(p)) return 'api';
+  if (platform === 'ios' || platform === 'android' || platform === 'both') return 'mobile';
+  if (/\b(dashboard|admin|web|site|portal)\b/.test(p)) return 'web';
+  return 'mobile';
+}
+
+let elementIdCounter = 0;
+function eid(): string {
+  elementIdCounter += 1;
+  return `el_${elementIdCounter}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function el(type: string, label: string, icon?: string): ScreenElement {
+  return { id: eid(), type, label, icon };
+}
+
+/**
+ * Generate screen specs from the prompt text by matching keyword signals.
+ * Each screen maps 1:1 to an AppRegion. Some screens are intentionally
+ * incomplete so the user has something to finish in the builder.
+ */
+function generateScreens(prompt: string): ScreenSpec[] {
+  const p = prompt.toLowerCase();
+  const screens: ScreenSpec[] = [];
+
+  // Always include a home/landing screen.
+  screens.push({
+    name: 'Home',
+    regionType: 'home',
+    description: 'Primary landing surface with quick actions and summary content.',
+    elements: [
+      el('header', 'App Header', 'Sparkles'),
+      el('search', 'Search', 'Search'),
+      el('card', 'Featured Content', 'Boxes'),
+      el('list', 'Recent Items', 'List'),
+      el('tabbar', 'Bottom Navigation', 'LayoutTemplate'),
+    ],
   });
-  const [typography, setTypography] = useState<TypographyConfig>(DEFAULT_TYPOGRAPHY);
-  const [prefs, setPrefs] = useState<UserPreferences>(DEFAULT_PREFS);
 
-  const [deployDialogOpen, setdeployDialogOpen] = useState(false);
-  const [exportPanelOpen, setexportPanelOpen] = useState(false);
-  const [commandPaletteOpen, setcommandPaletteOpen] = useState(false);
-  const [assetManagerOpen, setassetManagerOpen] = useState(false);
-  const [typographyEditorOpen, settypographyEditorOpen] = useState(false);
-  const [screenTemplatePickerOpen, setscreenTemplatePickerOpen] = useState(false);
-  const [pushComposerOpen, setpushComposerOpen] = useState(false);
-  const [onboardingBuilderOpen, setonboardingBuilderOpen] = useState(false);
-  const [apiExplorerOpen, setapiExplorerOpen] = useState(false);
-  const [seedDataPanelOpen, setseedDataPanelOpen] = useState(false);
-  const [errorMonitorOpen, seterrorMonitorOpen] = useState(false);
-  const [commentsPanelOpen, setcommentsPanelOpen] = useState(false);
-  const [shareDialogOpen, setshareDialogOpen] = useState(false);
-  const [settingsPanelOpen, setsettingsPanelOpen] = useState(false);
-  const [shortcutsGuideOpen, setshortcutsGuideOpen] = useState(false);
-  const [localizationEditorOpen, setlocalizationEditorOpen] = useState(false);
-  const [featureFlagsManagerOpen, setfeatureFlagsManagerOpen] = useState(false);
-  const [webhookManagerOpen, setwebhookManagerOpen] = useState(false);
-  const [scheduledTasksOpen, setscheduledTasksOpen] = useState(false);
-  const [designTokensManagerOpen, setdesignTokensManagerOpen] = useState(false);
-  const [teamPanelOpen, setteamPanelOpen] = useState(false);
-  const [releaseNotesGeneratorOpen, setreleaseNotesGeneratorOpen] = useState(false);
-  const [deepLinkConfiguratorOpen, setdeepLinkConfiguratorOpen] = useState(false);
-  const [envVarsManagerOpen, setenvVarsManagerOpen] = useState(false);
-  const [devicePreviewSwitcherOpen, setdevicePreviewSwitcherOpen] = useState(false);
-  const [securityScannerOpen, setsecurityScannerOpen] = useState(false);
-  const [emailTemplateEditorOpen, setemailTemplateEditorOpen] = useState(false);
-  const [storageManagerOpen, setstorageManagerOpen] = useState(false);
-  const [healthCheckDashboardOpen, sethealthCheckDashboardOpen] = useState(false);
-  const [backupManagerOpen, setbackupManagerOpen] = useState(false);
-  const [auditTrailPanelOpen, setauditTrailPanelOpen] = useState(false);
-  const [customDomainConfigOpen, setcustomDomainConfigOpen] = useState(false);
-  const [rateLimitConfigOpen, setrateLimitConfigOpen] = useState(false);
-  const [cacheManagerOpen, setcacheManagerOpen] = useState(false);
-  const [appConfigEditorOpen, setappConfigEditorOpen] = useState(false);
-  const [bulkActionsPanelOpen, setbulkActionsPanelOpen] = useState(false);
-  const [codeDiffViewerOpen, setcodeDiffViewerOpen] = useState(false);
-  const [aBTestingPanelOpen, setaBTestingPanelOpen] = useState(false);
-  const [aIAnomalyDetectorOpen, setaIAnomalyDetectorOpen] = useState(false);
-  const [aIAppValuationCalculatorOpen, setaIAppValuationCalculatorOpen] = useState(false);
-  const [aIChatOpen, setaIChatOpen] = useState(false);
-  const [aICognitiveLoadAnalyzerOpen, setaICognitiveLoadAnalyzerOpen] = useState(false);
-  const [aICompetitorGapAnalyzerOpen, setaICompetitorGapAnalyzerOpen] = useState(false);
-  const [aICritiquePersonaOpen, setaICritiquePersonaOpen] = useState(false);
-  const [aIFrictionScoreOpen, setaIFrictionScoreOpen] = useState(false);
-  const [aIHeatmapPredictorOpen, setaIHeatmapPredictorOpen] = useState(false);
-  const [aIMonetizationStrategistOpen, setaIMonetizationStrategistOpen] = useState(false);
-  const [aISecurityPatchRecommenderOpen, setaISecurityPatchRecommenderOpen] = useState(false);
-  const [aPIKeyManagerOpen, setaPIKeyManagerOpen] = useState(false);
-  const [accessibilityCheckerOpen, setaccessibilityCheckerOpen] = useState(false);
-  const [activityLogOpen, setactivityLogOpen] = useState(false);
-  const [analyticsDashboardOpen, setanalyticsDashboardOpen] = useState(false);
-  const [analyticsEventsOpen, setAnalyticsEventsOpen] = useState(false);
-  const [appMarketSizingToolOpen, setappMarketSizingToolOpen] = useState(false);
-  const [appStoreAssetsOpen, setappStoreAssetsOpen] = useState(false);
-  const [appStoreRankingPredictorOpen, setappStoreRankingPredictorOpen] = useState(false);
-  const [auditPanelOpen, setauditPanelOpen] = useState(false);
-  const [batteryImpactProfilerOpen, setbatteryImpactProfilerOpen] = useState(false);
-  const [buildMetricsOpen, setbuildMetricsOpen] = useState(false);
-  const [buildStagesOpen, setbuildStagesOpen] = useState(false);
-  const [bundleSizeTreemapOpen, setbundleSizeTreemapOpen] = useState(false);
-  const [cIPipelineVisualizerOpen, setcIPipelineVisualizerOpen] = useState(false);
-  const [codeReviewAssignmentOpen, setcodeReviewAssignmentOpen] = useState(false);
-  const [codeViewerOpen, setcodeViewerOpen] = useState(false);
-  const [collaborativeEditingPanelOpen, setcollaborativeEditingPanelOpen] = useState(false);
-  const [colorPsychologyEngineOpen, setcolorPsychologyEngineOpen] = useState(false);
-  const [competitiveLandscapeMapperOpen, setcompetitiveLandscapeMapperOpen] = useState(false);
-  const [componentInspectorOpen, setcomponentInspectorOpen] = useState(false);
-  const [componentLibraryOpen, setcomponentLibraryOpen] = useState(false);
-  const [componentStorybookOpen, setcomponentStorybookOpen] = useState(false);
-  const [contextMenuBarOpen, setcontextMenuBarOpen] = useState(false);
-  const [cookieConsentDesignerOpen, setcookieConsentDesignerOpen] = useState(false);
-  const [crossDeviceScreenshotDiffOpen, setcrossDeviceScreenshotDiffOpen] = useState(false);
-  const [customizableDashboardOpen, setcustomizableDashboardOpen] = useState(false);
-  const [dataExplorerOpen, setDataExplorerOpen] = useState(false);
-  const [dataFlowVisualizerOpen, setdataFlowVisualizerOpen] = useState(false);
-  const [dataRetentionPolicyBuilderOpen, setdataRetentionPolicyBuilderOpen] = useState(false);
-  const [databaseMigrationManagerOpen, setdatabaseMigrationManagerOpen] = useState(false);
-  const [dependencyManagerOpen, setdependencyManagerOpen] = useState(false);
-  const [designReviewSystemOpen, setdesignReviewSystemOpen] = useState(false);
-  const [edgeFunctionVisualBuilderOpen, setedgeFunctionVisualBuilderOpen] = useState(false);
-  const [emailDigestSettingsOpen, setemailDigestSettingsOpen] = useState(false);
-  const [emptyStateDesignerOpen, setemptyStateDesignerOpen] = useState(false);
-  const [encryptionAuditDashboardOpen, setencryptionAuditDashboardOpen] = useState(false);
-  const [featureRequestBoardOpen, setfeatureRequestBoardOpen] = useState(false);
-  const [feedbackCollectorOpen, setfeedbackCollectorOpen] = useState(false);
-  const [fontSizeAdjusterOpen, setfontSizeAdjusterOpen] = useState(false);
-  const [formBuilderOpen, setFormBuilderOpen] = useState(false);
-  const [gDPRComplianceScannerOpen, setgDPRComplianceScannerOpen] = useState(false);
-  const [gamificationSystemOpen, setgamificationSystemOpen] = useState(false);
-  const [globalSearchOpen, setglobalSearchOpen] = useState(false);
-  const [graphQLSchemaVisualDesignerOpen, setgraphQLSchemaVisualDesignerOpen] = useState(false);
-  const [growthLoopVisualizerOpen, setgrowthLoopVisualizerOpen] = useState(false);
-  const [headerOpen, setheaderOpen] = useState(false);
-  const [imageCompressionSettingsOpen, setimageCompressionSettingsOpen] = useState(false);
-  const [integrationMarketplaceOpen, setintegrationMarketplaceOpen] = useState(false);
-  const [interactiveRoadmapOpen, setinteractiveRoadmapOpen] = useState(false);
-  const [investorPitchDeckGeneratorOpen, setinvestorPitchDeckGeneratorOpen] = useState(false);
-  const [keyboardShortcutsMapOpen, setkeyboardShortcutsMapOpen] = useState(false);
-  const [lighthouseScorePredictorOpen, setlighthouseScorePredictorOpen] = useState(false);
-  const [logViewerOpen, setLogViewerOpen] = useState(false);
-  const [memoryLeakVisualizerOpen, setmemoryLeakVisualizerOpen] = useState(false);
-  const [microInteractionLibraryOpen, setmicroInteractionLibraryOpen] = useState(false);
-  const [miniMapNavigatorOpen, setminiMapNavigatorOpen] = useState(false);
-  const [mobileResponsivePreviewOpen, setmobileResponsivePreviewOpen] = useState(false);
-  const [navigationGraphOpen, setnavigationGraphOpen] = useState(false);
-  const [networkConditionSimulatorOpen, setnetworkConditionSimulatorOpen] = useState(false);
-  const [notificationCenterOpen, setnotificationCenterOpen] = useState(false);
-  const [notificationPreferencesOpen, setnotificationPreferencesOpen] = useState(false);
-  const [oAuthProvidersConfigOpen, setoAuthProvidersConfigOpen] = useState(false);
-  const [offlineFirstSyncDesignerOpen, setofflineFirstSyncDesignerOpen] = useState(false);
-  const [onboardingTourOpen, setonboardingTourOpen] = useState(false);
-  const [pIIDataScannerOpen, setpIIDataScannerOpen] = useState(false);
-  const [pageTransitionConfigOpen, setpageTransitionConfigOpen] = useState(false);
-  const [penetrationTestReportGeneratorOpen, setpenetrationTestReportGeneratorOpen] = useState(false);
-  const [performanceProfilerOpen, setperformanceProfilerOpen] = useState(false);
-  const [permissionMatrixVisualizerOpen, setpermissionMatrixVisualizerOpen] = useState(false);
-  const [phonePreviewOpen, setphonePreviewOpen] = useState(false);
-  const [pinnedFavoritesBarOpen, setpinnedFavoritesBarOpen] = useState(false);
-  const [platformAnalyticsOpen, setplatformAnalyticsOpen] = useState(false);
-  const [platformLanguageSwitcherOpen, setplatformLanguageSwitcherOpen] = useState(false);
-  const [predictiveChurnIndicatorOpen, setpredictiveChurnIndicatorOpen] = useState(false);
-  const [pricingStrategyABTesterOpen, setpricingStrategyABTesterOpen] = useState(false);
-  const [privacyPolicyAutoGeneratorOpen, setprivacyPolicyAutoGeneratorOpen] = useState(false);
-  const [projectDashboardOpen, setprojectDashboardOpen] = useState(false);
-  const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
-  const [promptScreenOpen, setpromptScreenOpen] = useState(false);
-  const [reducedMotionSettingsOpen, setreducedMotionSettingsOpen] = useState(false);
-  const [referralProgramDesignerOpen, setreferralProgramDesignerOpen] = useState(false);
-  const [regionModalOpen, setregionModalOpen] = useState(false);
-  const [responsiveBreakpointDebuggerOpen, setresponsiveBreakpointDebuggerOpen] = useState(false);
-  const [retinaDisplaySettingsOpen, setretinaDisplaySettingsOpen] = useState(false);
-  const [revenueProjectionEngineOpen, setrevenueProjectionEngineOpen] = useState(false);
-  const [reviewSentimentAnalyzerOpen, setreviewSentimentAnalyzerOpen] = useState(false);
-  const [sMSConfigOpen, setsMSConfigOpen] = useState(false);
-  const [screenFlowOpen, setscreenFlowOpen] = useState(false);
-  const [settingsExportImportOpen, setsettingsExportImportOpen] = useState(false);
-  const [skeletonLoadingPreviewOpen, setskeletonLoadingPreviewOpen] = useState(false);
-  const [smartCacheIndicatorOpen, setsmartCacheIndicatorOpen] = useState(false);
-  const [smartDesignSystemGeneratorOpen, setsmartDesignSystemGeneratorOpen] = useState(false);
-  const [sprintPlannerOpen, setsprintPlannerOpen] = useState(false);
-  const [syntheticUserSimulatorOpen, setsyntheticUserSimulatorOpen] = useState(false);
-  const [templatesGalleryOpen, settemplatesGalleryOpen] = useState(false);
-  const [testPanelOpen, settestPanelOpen] = useState(false);
-  const [themeEditorOpen, setthemeEditorOpen] = useState(false);
-  const [timelineAnimationComposerOpen, settimelineAnimationComposerOpen] = useState(false);
-  const [undoTimelineOpen, setundoTimelineOpen] = useState(false);
-  const [userJourneyMapperOpen, setuserJourneyMapperOpen] = useState(false);
-  const [versionHistoryOpen, setversionHistoryOpen] = useState(false);
-  const [viralCoefficientCalculatorOpen, setviralCoefficientCalculatorOpen] = useState(false);
-  const [visualGestureBuilderOpen, setvisualGestureBuilderOpen] = useState(false);
-  const [visualRegexBuilderOpen, setvisualRegexBuilderOpen] = useState(false);
-  const [visualStateMachineEditorOpen, setvisualStateMachineEditorOpen] = useState(false);
-  const [voiceCommandPanelOpen, setvoiceCommandPanelOpen] = useState(false);
-  const [webSocketEventDesignerOpen, setwebSocketEventDesignerOpen] = useState(false);
-  const [webhookTesterOpen, setWebhookTesterOpen] = useState(false);
-  const [workspaceSwitcherOpen, setworkspaceSwitcherOpen] = useState(false);
-  const [a11yOpen, setA11yOpen] = useState(false);
-  const [abTestingOpen, setAbTestingOpen] = useState(false);
-  const [apiKeysOpen, setApiKeysOpen] = useState(false);
-  const [apiOpen, setApiOpen] = useState(false);
-  const [appConfigOpen, setAppConfigOpen] = useState(false);
-  const [assetOpen, setAssetOpen] = useState(false);
-  const [auditTrailOpen, setAuditTrailOpen] = useState(false);
-  const [backupOpen, setBackupOpen] = useState(false);
-  const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
-  const [cIPipelineOpen, setCIPipelineOpen] = useState(false);
-  const [cacheOpen, setCacheOpen] = useState(false);
-  const [codeDiffOpen, setCodeDiffOpen] = useState(false);
-  const [commandOpen, setCommandOpen] = useState(false);
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const [customDomainOpen, setCustomDomainOpen] = useState(false);
-  const [dbMigrationOpen, setDbMigrationOpen] = useState(false);
-  const [deepLinkOpen, setDeepLinkOpen] = useState(false);
-  const [deployOpen, setDeployOpen] = useState(false);
-  const [depsOpen, setDepsOpen] = useState(false);
-  const [designTokensOpen, setDesignTokensOpen] = useState(false);
-  const [devicePreviewOpen, setDevicePreviewOpen] = useState(false);
-  const [emailTemplateOpen, setEmailTemplateOpen] = useState(false);
-  const [envVarsOpen, setEnvVarsOpen] = useState(false);
-  const [errorOpen, setErrorOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [featureFlagsOpen, setFeatureFlagsOpen] = useState(false);
-  const [healthCheckOpen, setHealthCheckOpen] = useState(false);
-  const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [integrationsOpen, setIntegrationsOpen] = useState(false);
-  const [journeyOpen, setJourneyOpen] = useState(false);
-  const [localizationOpen, setLocalizationOpen] = useState(false);
-  const [navGraphOpen, setNavGraphOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [oauthOpen, setOauthOpen] = useState(false);
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [pushOpen, setPushOpen] = useState(false);
-  const [rateLimitOpen, setRateLimitOpen] = useState(false);
-  const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
-  const [scheduledOpen, setScheduledOpen] = useState(false);
-  const [screenTemplateOpen, setScreenTemplateOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [securityOpen, setSecurityOpen] = useState(false);
-  const [seedOpen, setSeedOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [smsOpen, setSmsOpen] = useState(false);
-  const [storageOpen, setStorageOpen] = useState(false);
-  const [storeOpen, setStoreOpen] = useState(false);
-  const [teamOpen, setTeamOpen] = useState(false);
-  const [typographyOpen, setTypographyOpen] = useState(false);
-  const [versionsOpen, setVersionsOpen] = useState(false);
-  const [webhookOpen, setWebhookOpen] = useState(false);
-  const [aICodeCompletionOpen, setaICodeCompletionOpen] = useState(false);
-  const [aRCoreSceneConfigOpen, setaRCoreSceneConfigOpen] = useState(false);
-  const [aRKitSceneConfigOpen, setaRKitSceneConfigOpen] = useState(false);
-  const [aVIFConverterOpen, setaVIFConverterOpen] = useState(false);
-  const [aWSAmplifySetupOpen, setaWSAmplifySetupOpen] = useState(false);
-  const [androidKeystoreManagerOpen, setandroidKeystoreManagerOpen] = useState(false);
-  const [androidWidgetBuilderOpen, setandroidWidgetBuilderOpen] = useState(false);
-  const [appAttestationConfigOpen, setappAttestationConfigOpen] = useState(false);
-  const [appleWatchBuilderOpen, setappleWatchBuilderOpen] = useState(false);
-  const [biometricAuthConfigOpen, setbiometricAuthConfigOpen] = useState(false);
-  const [containerQueriesBuilderOpen, setcontainerQueriesBuilderOpen] = useState(false);
-  const [coreMLModelIntegratorOpen, setcoreMLModelIntegratorOpen] = useState(false);
-  const [darkModeDesignerOpen, setdarkModeDesignerOpen] = useState(false);
-  const [dynamicColorThemesOpen, setdynamicColorThemesOpen] = useState(false);
-  const [dynamicIslandConfigOpen, setdynamicIslandConfigOpen] = useState(false);
-  const [e2EEConfigOpen, sete2EEConfigOpen] = useState(false);
-  const [eSLintConfigEditorOpen, seteSLintConfigEditorOpen] = useState(false);
-  const [edgeFunctionDeployerOpen, setedgeFunctionDeployerOpen] = useState(false);
-  const [energyMetricsPanelOpen, setenergyMetricsPanelOpen] = useState(false);
-  const [faceIDConfigOpen, setfaceIDConfigOpen] = useState(false);
-  const [firebaseConfigOpen, setfirebaseConfigOpen] = useState(false);
-  const [foldableSupportConfigOpen, setfoldableSupportConfigOpen] = useState(false);
-  const [gitHubActionsBuilderOpen, setgitHubActionsBuilderOpen] = useState(false);
-  const [glassmorphismDesignerOpen, setglassmorphismDesignerOpen] = useState(false);
-  const [graphQLClientBuilderOpen, setgraphQLClientBuilderOpen] = useState(false);
-  const [jetpackComposePreviewOpen, setjetpackComposePreviewOpen] = useState(false);
-  const [kotlinCodeGeneratorOpen, setkotlinCodeGeneratorOpen] = useState(false);
-  const [liDARScannerConfigOpen, setliDARScannerConfigOpen] = useState(false);
-  const [lottieAnimationImporterOpen, setlottieAnimationImporterOpen] = useState(false);
-  const [mLKitIntegratorOpen, setmLKitIntegratorOpen] = useState(false);
-  const [materialDesign3ThemeBuilderOpen, setmaterialDesign3ThemeBuilderOpen] = useState(false);
-  const [microInteractionsStudioOpen, setmicroInteractionsStudioOpen] = useState(false);
-  const [moduleFederationConfigOpen, setmoduleFederationConfigOpen] = useState(false);
-  const [nFCConfiguratorOpen, setnFCConfiguratorOpen] = useState(false);
-  const [neumorphismDesignerOpen, setneumorphismDesignerOpen] = useState(false);
-  const [oAuthConfigOpen, setoAuthConfigOpen] = useState(false);
-  const [oTAUpdateManagerOpen, setoTAUpdateManagerOpen] = useState(false);
-  const [onDeviceLLMConfigOpen, setonDeviceLLMConfigOpen] = useState(false);
-  const [pWAConfiguratorOpen, setpWAConfiguratorOpen] = useState(false);
-  const [predictiveAnalyticsConfigOpen, setpredictiveAnalyticsConfigOpen] = useState(false);
-  const [prettierConfigEditorOpen, setprettierConfigEditorOpen] = useState(false);
-  const [r8ProGuardConfigOpen, setr8ProGuardConfigOpen] = useState(false);
-  const [riveAnimationImporterOpen, setriveAnimationImporterOpen] = useState(false);
-  const [sFSymbolsBrowserOpen, setsFSymbolsBrowserOpen] = useState(false);
-  const [sentryConfigOpen, setsentryConfigOpen] = useState(false);
-  const [serviceWorkerManagerOpen, setserviceWorkerManagerOpen] = useState(false);
-  const [sonarQubeIntegrationOpen, setsonarQubeIntegrationOpen] = useState(false);
-  const [swiftCodeGeneratorOpen, setswiftCodeGeneratorOpen] = useState(false);
-  const [swiftUIPreviewOpen, setswiftUIPreviewOpen] = useState(false);
-  const [tensorFlowLiteConfigOpen, settensorFlowLiteConfigOpen] = useState(false);
-  const [viewTransitionsAPIOpen, setviewTransitionsAPIOpen] = useState(false);
-  const [wCAGComplianceCheckerOpen, setwCAGComplianceCheckerOpen] = useState(false);
-  const [wearOSBuilderOpen, setwearOSBuilderOpen] = useState(false);
-  const [webAssemblyCompilerOpen, setwebAssemblyCompilerOpen] = useState(false);
-  const [webNotificationsConfigOpen, setwebNotificationsConfigOpen] = useState(false);
-  const [webRTCConfigOpen, setwebRTCConfigOpen] = useState(false);
-  const [webShareAPITesterOpen, setwebShareAPITesterOpen] = useState(false);
-  const [webVitalsMonitorOpen, setwebVitalsMonitorOpen] = useState(false);
-  const [widgetKitBuilderOpen, setwidgetKitBuilderOpen] = useState(false);
-  const [gRPCServiceBuilderOpen, setGRPCServiceBuilderOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const buildTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  const handleStart = useCallback(async (prompt: string, platform: Platform) => {
-    const spec = parsePrompt(prompt);
-
-    const { data: proj, error: projErr } = await supabase
-      .from('projects')
-      .insert({
-        name: spec.appName,
-        prompt,
-        platform,
-        app_type: spec.appType,
-        status: 'building',
-        config: { colorScheme: spec.colorScheme },
-      })
-      .select()
-      .single();
-
-    if (projErr || !proj) throw new Error(projErr?.message ?? 'Failed to create project');
-    const projectRow = proj as unknown as Project;
-    setProject(projectRow);
-    setColorScheme(spec.colorScheme);
-    setRecentProjectName(projectRow.name);
-    setView('builder');
-    setActiveTab('design');
-
-    const stageRows = STAGE_DEFINITIONS.map((s, i) => ({
-      project_id: projectRow.id, stage_name: s.name, stage_type: s.type,
-      status: 'pending', logs: '', sort_order: i,
-    }));
-    const { data: insertedStages, error: stageErr } = await supabase
-      .from('build_stages').insert(stageRows).select();
-    if (stageErr || !insertedStages) throw new Error(stageErr?.message ?? 'Failed to create build stages');
-    setStages(insertedStages as unknown as BuildStage[]);
-
-    const regionRows = spec.screens.map((screen, i) => ({
-      project_id: projectRow.id, region_name: screen.name, region_type: screen.regionType,
-      status: screen.intentionallyIncomplete ? 'incomplete' : 'complete',
-      spec: screen, description: screen.description, sort_order: i,
-    }));
-    const { data: insertedRegions, error: regionErr } = await supabase
-      .from('app_regions').insert(regionRows).select();
-    if (regionErr || !insertedRegions) throw new Error(regionErr?.message ?? 'Failed to create app regions');
-    setRegions(insertedRegions as unknown as AppRegion[], true);
-
-    runBuildPipeline(projectRow.id, spec.appType);
-  }, [setRegions]);
-
-  const runBuildPipeline = useCallback((projectId: string, appType: string) => {
-    const stageDefs = STAGE_DEFINITIONS;
-    let stageIdx = 0;
-
-    const runNextStage = () => {
-      if (stageIdx >= stageDefs.length) {
-        supabase.from('projects').update({ status: 'completed' }).eq('id', projectId);
-        setActiveLog('Build complete. Your app is ready to explore.');
-        return;
-      }
-      const def = stageDefs[stageIdx];
-      const logs = stageLogs(def.type, appType);
-      let logIdx = 0;
-
-      setStages((prev) => prev.map((s) => s.stage_type === def.type ? { ...s, status: 'in_progress' } : s));
-      supabase.from('build_stages').update({ status: 'in_progress' }).eq('project_id', projectId).eq('stage_type', def.type);
-
-      const streamLog = () => {
-        if (logIdx < logs.length) {
-          setActiveLog(logs[logIdx]);
-          logIdx++;
-          buildTimer.current = setTimeout(streamLog, 700);
-        } else {
-          setStages((prev) => prev.map((s) => s.stage_type === def.type ? { ...s, status: 'completed', logs: logs.join('\n') } : s));
-          supabase.from('build_stages').update({ status: 'completed', logs: logs.join('\n') }).eq('project_id', projectId).eq('stage_type', def.type);
-          stageIdx++;
-          buildTimer.current = setTimeout(runNextStage, 350);
-        }
-      };
-      streamLog();
-    };
-    runNextStage();
-  }, []);
-
-  const handleCompleteRegion = async (regionId: string) => {
-    setRegions((prev) => prev.map((r) => (r.id === regionId ? { ...r, status: 'complete' } : r)));
-    await supabase.from('app_regions').update({ status: 'complete' }).eq('id', regionId);
-    setModalRegion(null);
-  };
-
-  const handleAddElement = (regionId: string, element: ScreenElement) => {
-    setRegions((prev) => prev.map((r) =>
-      r.id === regionId ? { ...r, spec: { ...r.spec, elements: [...r.spec.elements, element] } } : r,
-    ));
-  };
-
-  const handleAddScreenFromTemplate = (template: any) => {
-    if (!project) return;
-    const newRegion: AppRegion = {
-      id: crypto.randomUUID(),
-      project_id: project.id,
-      region_name: template.name,
-      region_type: template.regionType,
-      status: 'complete',
-      spec: { name: template.name, regionType: template.regionType, elements: template.elements, description: template.description },
-      description: template.description,
-      sort_order: regions.length,
-      created_at: new Date().toISOString(),
-    };
-    setRegions((prev) => [...prev, newRegion]);
-  };
-
-  const handleColorChange = (cs: ColorScheme) => {
-    setColorScheme(cs);
-    if (project) supabase.from('projects').update({ config: { colorScheme: cs } }).eq('id', project.id);
-  };
-
-  const handleOpenProject = (proj: Project) => {
-    setProject(proj);
-    if (proj.config?.colorScheme) setColorScheme(proj.config.colorScheme);
-    setView('builder');
-    supabase.from('build_stages').select('*').eq('project_id', proj.id).order('sort_order').then(({ data }) => {
-      if (data) setStages(data as unknown as BuildStage[]);
+  if (/\b(task|todo|kanban|board|reminder|checklist|habit|streak)\b/.test(p)) {
+    screens.push({
+      name: 'Tasks Board',
+      regionType: 'board',
+      description: 'Kanban-style board with draggable cards and status columns.',
+      elements: [
+        el('header', 'Board Title', 'Layers'),
+        el('column', 'To Do', 'Circle'),
+        el('column', 'In Progress', 'Loader2'),
+        el('column', 'Done', 'Check'),
+        el('fab', 'Add Task', 'Plus'),
+      ],
     });
-    supabase.from('app_regions').select('*').eq('project_id', proj.id).order('sort_order').then(({ data }) => {
-      if (data) setRegions(data as unknown as AppRegion[], true);
+    screens.push({
+      name: 'Task Detail',
+      regionType: 'detail',
+      description: 'Single task with subtasks, due date, and notes.',
+      elements: [
+        el('header', 'Task Title', 'FileText'),
+        el('checkbox', 'Subtasks', 'CheckSquare'),
+        el('datepicker', 'Due Date', 'CalendarClock'),
+        el('textarea', 'Notes', 'FileText'),
+      ],
+      intentionallyIncomplete: true,
     });
-  };
-
-  const handleNew = () => {
-    if (buildTimer.current) clearTimeout(buildTimer.current);
-    setProject(null);
-    setStages([]);
-    setRegions([], true);
-    setActiveLog('');
-    setView('prompt');
-  };
-
-  useEffect(() => {
-    return () => { if (buildTimer.current) clearTimeout(buildTimer.current); };
-  }, []);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    if (view !== 'builder') return;
-    const handler = (e: KeyboardEvent) => {
-      const meta = e.metaKey || e.ctrlKey;
-      if (meta && e.key === 'k') { e.preventDefault(); setCommandOpen(true); }
-      else if (meta && e.key === '/') { e.preventDefault(); setSearchOpen(true); }
-      else if (meta && e.key === 'b') { e.preventDefault(); setSidebarOpen(s => !s); }
-      else if (meta && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-      else if (meta && e.shiftKey && e.key === 'z') { e.preventDefault(); redo(); }
-      else if (meta && e.key === 'e') { e.preventDefault(); setExportOpen(true); }
-      else if (meta && e.shiftKey && e.key === 'd') { e.preventDefault(); setDeployOpen(true); }
-      else if (meta && e.shiftKey && e.key === 's') { e.preventDefault(); setStoreOpen(true); }
-      else if (e.key === '?' && !meta) { e.preventDefault(); setShortcutsOpen(true); }
-      else if (!meta && ['1','2','3','4','5','6'].includes(e.key)) {
-        const tabs: BuilderTab[] = ['design','code','database','test','audit','deploy'];
-        const idx = parseInt(e.key) - 1;
-        if (tabs[idx]) setActiveTab(tabs[idx]);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [view, undo, redo]);
-
-  const isBuilding = stages.some((s) => s.status === 'in_progress' || s.status === 'pending');
-  const buildComplete = stages.length > 0 && stages.every((s) => s.status === 'completed');
-  const incompleteRegions = regions.filter((r) => r.status === 'incomplete');
-
-  const commands: Command[] = [
-    { id: 'search', label: 'Search screens', shortcut: '⌘/', icon: <SearchIcon className="w-4 h-4" />, section: 'Navigation', action: () => setSearchOpen(true) },
-    { id: 'design', label: 'Go to Design tab', shortcut: '1', icon: <Palette className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('design') },
-    { id: 'code', label: 'Go to Code tab', shortcut: '2', icon: <Code2 className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('code') },
-    { id: 'database', label: 'Go to Data tab', shortcut: '3', icon: <DatabaseIcon className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('database') },
-    { id: 'test', label: 'Go to Tests tab', shortcut: '4', icon: <TestTube className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('test') },
-    { id: 'audit', label: 'Go to Audit tab', shortcut: '5', icon: <Gauge className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('audit') },
-    { id: 'analytics', label: 'Go to Analytics', icon: <BarChart3 className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('analytics') },
-    { id: 'performance', label: 'Go to Profiler', icon: <Zap className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('performance') },
-    { id: 'deploy', label: 'Go to Deploy tab', shortcut: '6', icon: <DeployIcon className="w-4 h-4" />, section: 'Navigation', action: () => setActiveTab('deploy') },
-    { id: 'deploy-dialog', label: 'Deploy to cloud', shortcut: '⌘⇧D', icon: <Rocket className="w-4 h-4" />, section: 'Actions', action: () => setDeployOpen(true) },
-    { id: 'export', label: 'Export code', shortcut: '⌘E', icon: <Code2 className="w-4 h-4" />, section: 'Actions', action: () => setExportOpen(true) },
-    { id: 'store', label: 'App store assets', shortcut: '⌘⇧S', icon: <Store className="w-4 h-4" />, section: 'Actions', action: () => setStoreOpen(true) },
-    { id: 'versions', label: 'Version history', icon: <GitBranch className="w-4 h-4" />, section: 'Actions', action: () => setVersionsOpen(true) },
-    { id: 'share', label: 'Share preview link', icon: <Share2 className="w-4 h-4" />, section: 'Actions', action: () => setShareOpen(true) },
-    { id: 'assets', label: 'Open asset library', icon: <ImageIcon className="w-4 h-4" />, section: 'Design', action: () => setAssetOpen(true) },
-    { id: 'typography', label: 'Edit typography', icon: <Type className="w-4 h-4" />, section: 'Design', action: () => setTypographyOpen(true) },
-    { id: 'screen-templates', label: 'Add screen from template', icon: <LayoutTemplate className="w-4 h-4" />, section: 'Design', action: () => setScreenTemplateOpen(true) },
-    { id: 'push', label: 'Compose push notification', icon: <Send className="w-4 h-4" />, section: 'Engagement', action: () => setPushOpen(true) },
-    { id: 'onboarding', label: 'Build onboarding flow', icon: <Sparkles className="w-4 h-4" />, section: 'Engagement', action: () => setOnboardingOpen(true) },
-    { id: 'api', label: 'Explore API endpoints', icon: <Code2 className="w-4 h-4" />, section: 'Backend', action: () => setApiOpen(true) },
-    { id: 'seed', label: 'Generate seed data', icon: <DatabaseIcon className="w-4 h-4" />, section: 'Backend', action: () => setSeedOpen(true) },
-    { id: 'errors', label: 'View error monitor', icon: <Bug className="w-4 h-4" />, section: 'Monitoring', action: () => setErrorOpen(true) },
-    { id: 'comments', label: 'Open comments', icon: <MessageSquare className="w-4 h-4" />, section: 'Collaboration', action: () => setCommentsOpen(true) },
-    { id: 'settings', label: 'Open preferences', icon: <SettingsIcon className="w-4 h-4" />, section: 'Settings', action: () => setSettingsOpen(true) },
-    { id: 'shortcuts', label: 'Keyboard shortcuts', shortcut: '?', icon: <Keyboard className="w-4 h-4" />, section: 'Settings', action: () => setShortcutsOpen(true) },
-    { id: 'undo', label: 'Undo', shortcut: '⌘Z', icon: <ArrowRight className="w-4 h-4 rotate-180" />, section: 'Editing', action: undo },
-    { id: 'redo', label: 'Redo', shortcut: '⌘⇧Z', icon: <ArrowRight className="w-4 h-4" />, section: 'Editing', action: redo },
-    { id: 'ab-testing', label: 'A/B Testing', icon: <FlaskConical className="w-4 h-4" />, section: 'Testing', action: () => setAbTestingOpen(true) },
-    { id: 'localization', label: 'Localization Editor', icon: <Globe className="w-4 h-4" />, section: 'Content', action: () => setLocalizationOpen(true) },
-    { id: 'feature-flags', label: 'Feature Flags', icon: <Flag className="w-4 h-4" />, section: 'Backend', action: () => setFeatureFlagsOpen(true) },
-    { id: 'ci-pipeline', label: 'CI/CD Pipeline', icon: <GitBranchIcon className="w-4 h-4" />, section: 'DevOps', action: () => setCIPipelineOpen(true) },
-    { id: 'journey', label: 'User Journey Mapper', icon: <Route className="w-4 h-4" />, section: 'Analytics', action: () => setJourneyOpen(true) },
-    { id: 'form-builder', label: 'Form Builder', icon: <FormInput className="w-4 h-4" />, section: 'Design', action: () => setFormBuilderOpen(true) },
-    { id: 'nav-graph', label: 'Navigation Graph', icon: <Network className="w-4 h-4" />, section: 'Design', action: () => setNavGraphOpen(true) },
-    { id: 'webhooks', label: 'Webhook Manager', icon: <Webhook className="w-4 h-4" />, section: 'Backend', action: () => setWebhookOpen(true) },
-    { id: 'scheduled', label: 'Scheduled Tasks', icon: <Clock className="w-4 h-4" />, section: 'Backend', action: () => setScheduledOpen(true) },
-    { id: 'data-explorer', label: 'Data Explorer', icon: <DbIconExplore className="w-4 h-4" />, section: 'Backend', action: () => setDataExplorerOpen(true) },
-    { id: 'inspector', label: 'Component Inspector', icon: <SlidersHorizontal className="w-4 h-4" />, section: 'Design', action: () => setInspectorOpen(true) },
-    { id: 'design-tokens', label: 'Design Tokens', icon: <Palette className="w-4 h-4" />, section: 'Design', action: () => setDesignTokensOpen(true) },
-    { id: 'a11y', label: 'Accessibility Checker', icon: <A11yIcon className="w-4 h-4" />, section: 'Quality', action: () => setA11yOpen(true) },
-    { id: 'team', label: 'Team Management', icon: <Users className="w-4 h-4" />, section: 'Collaboration', action: () => setTeamOpen(true) },
-    { id: 'release-notes', label: 'Release Notes', icon: <FileText className="w-4 h-4" />, section: 'Deploy', action: () => setReleaseNotesOpen(true) },
-    { id: 'deep-links', label: 'Deep Link Configurator', icon: <Link2 className="w-4 h-4" />, section: 'Deploy', action: () => setDeepLinkOpen(true) },
-    { id: 'env-vars', label: 'Environment Variables', icon: <KeyRound className="w-4 h-4" />, section: 'DevOps', action: () => setEnvVarsOpen(true) },
-    { id: 'device-preview', label: 'Device Preview Switcher', icon: <Monitor className="w-4 h-4" />, section: 'Design', action: () => setDevicePreviewOpen(true) },
-    { id: 'analytics-events', label: 'Analytics Events & Funnels', icon: <Target className="w-4 h-4" />, section: 'Analytics', action: () => setAnalyticsEventsOpen(true) },
-    { id: 'security', label: 'Security Scanner', icon: <ShieldCheck className="w-4 h-4" />, section: 'Quality', action: () => setSecurityOpen(true) },
-    { id: 'db-migrations', label: 'Database Migrations', icon: <DatabaseIcon className="w-4 h-4" />, section: 'Backend', action: () => setDbMigrationOpen(true) },
-    { id: 'email-templates', label: 'Email Templates', icon: <Mail className="w-4 h-4" />, section: 'Content', action: () => setEmailTemplateOpen(true) },
-    { id: 'storage', label: 'Storage Manager', icon: <HardDrive className="w-4 h-4" />, section: 'Backend', action: () => setStorageOpen(true) },
-    { id: 'logs', label: 'Log Viewer', icon: <Terminal className="w-4 h-4" />, section: 'Monitoring', action: () => setLogViewerOpen(true) },
-    { id: 'health', label: 'Health Checks', icon: <HeartPulse className="w-4 h-4" />, section: 'Monitoring', action: () => setHealthCheckOpen(true) },
-    { id: 'backups', label: 'Backup Manager', icon: <HardDriveDownload className="w-4 h-4" />, section: 'DevOps', action: () => setBackupOpen(true) },
-    { id: 'audit-trail', label: 'Audit Trail', icon: <ScrollText className="w-4 h-4" />, section: 'Security', action: () => setAuditTrailOpen(true) },
-    { id: 'domains', label: 'Custom Domains', icon: <Globe className="w-4 h-4" />, section: 'Deploy', action: () => setCustomDomainOpen(true) },
-    { id: 'oauth', label: 'OAuth Providers', icon: <KeyRound className="w-4 h-4" />, section: 'Auth', action: () => setOauthOpen(true) },
-    { id: 'rate-limit', label: 'Rate Limiting', icon: <GaugeIcon className="w-4 h-4" />, section: 'Backend', action: () => setRateLimitOpen(true) },
-    { id: 'cache', label: 'Cache Manager', icon: <ZapIcon className="w-4 h-4" />, section: 'Backend', action: () => setCacheOpen(true) },
-    { id: 'deps', label: 'Dependencies', icon: <Package className="w-4 h-4" />, section: 'DevOps', action: () => setDepsOpen(true) },
-    { id: 'app-config', label: 'App Config Editor', icon: <Settings2 className="w-4 h-4" />, section: 'Settings', action: () => setAppConfigOpen(true) },
-    { id: 'bulk-actions', label: 'Bulk Actions', icon: <ListChecks className="w-4 h-4" />, section: 'Editing', action: () => setBulkActionsOpen(true) },
-    { id: 'code-diff', label: 'Code Diff Viewer', icon: <GitCompare className="w-4 h-4" />, section: 'Code', action: () => setCodeDiffOpen(true) },
-    { id: 'api-keys', label: 'API Key Manager', icon: <KeyRound className="w-4 h-4" />, section: 'Security', action: () => setApiKeysOpen(true) },
-    { id: 'sms', label: 'SMS Configuration', icon: <SmsIcon className="w-4 h-4" />, section: 'Engagement', action: () => setSmsOpen(true) },
-    { id: 'webhook-tester', label: 'Webhook Tester', icon: <Webhook className="w-4 h-4" />, section: 'Backend', action: () => setWebhookTesterOpen(true) },
-    { id: 'integrations', label: 'Integration Marketplace', icon: <StoreIcon className="w-4 h-4" />, section: 'Extensions', action: () => setIntegrationsOpen(true) },
-    { id: 'project-settings', label: 'Project Settings', icon: <SettingsIcon className="w-4 h-4" />, section: 'Settings', action: () => setProjectSettingsOpen(true) },
-  ];
-
-  if (view === 'prompt') {
-    return <PromptScreen onStart={handleStart} recentProjectName={recentProjectName} />;
   }
 
-  if (view === 'dashboard') {
+  if (/\b(shop|store|commerce|cart|product|checkout|catalog|buy)\b/.test(p)) {
+    screens.push({
+      name: 'Product Catalog',
+      regionType: 'catalog',
+      description: 'Grid of products with search, filters, and category chips.',
+      elements: [
+        el('search', 'Search Products', 'Search'),
+        el('chips', 'Categories', 'Boxes'),
+        el('grid', 'Product Grid', 'LayoutGrid'),
+        el('tabbar', 'Bottom Navigation', 'LayoutTemplate'),
+      ],
+    });
+    screens.push({
+      name: 'Cart & Checkout',
+      regionType: 'checkout',
+      description: 'Shopping cart with line items and a one-tap checkout flow.',
+      elements: [
+        el('header', 'Your Cart', 'ShoppingCart'),
+        el('list', 'Cart Items', 'List'),
+        el('summary', 'Order Summary', 'Receipt'),
+        el('button', 'Checkout', 'CreditCard'),
+      ],
+      intentionallyIncomplete: true,
+    });
+  }
+
+  if (/\b(social|feed|post|like|comment|follow|timeline|community)\b/.test(p)) {
+    screens.push({
+      name: 'Feed',
+      regionType: 'feed',
+      description: 'Infinite-scroll timeline of posts with likes and comments.',
+      elements: [
+        el('header', 'Feed', 'MessageCircle'),
+        el('stories', 'Stories', 'Circle'),
+        el('feed', 'Post List', 'List'),
+        el('fab', 'New Post', 'Plus'),
+        el('tabbar', 'Bottom Navigation', 'LayoutTemplate'),
+      ],
+    });
+    screens.push({
+      name: 'Profile',
+      regionType: 'profile',
+      description: 'User profile with avatar, stats, and follow button.',
+      elements: [
+        el('avatar', 'Avatar', 'User'),
+        el('stats', 'Stats Row', 'BarChart3'),
+        el('button', 'Follow', 'UserPlus'),
+        el('grid', 'Posts Grid', 'LayoutGrid'),
+      ],
+    });
+  }
+
+  if (/\b(fitness|workout|exercise|run|gym|calorie|health|step)\b/.test(p)) {
+    screens.push({
+      name: 'Workout Tracker',
+      regionType: 'tracker',
+      description: 'Today’s workout with exercise logging and rest timers.',
+      elements: [
+        el('header', 'Today’s Workout', 'Dumbbell'),
+        el('ring', 'Progress Ring', 'Activity'),
+        el('list', 'Exercises', 'List'),
+        el('timer', 'Rest Timer', 'Timer'),
+      ],
+    });
+    screens.push({
+      name: 'Progress Charts',
+      regionType: 'charts',
+      description: 'Weekly progress charts and goal tracking.',
+      elements: [
+        el('header', 'Your Progress', 'BarChart3'),
+        el('chart', 'Weekly Chart', 'BarChart3'),
+        el('stat', 'Streak', 'Flame'),
+        el('goal', 'Goal Setting', 'Target'),
+      ],
+      intentionallyIncomplete: true,
+    });
+  }
+
+  if (/\b(finance|budget|expense|money|spending|account|transaction)\b/.test(p)) {
+    screens.push({
+      name: 'Dashboard',
+      regionType: 'dashboard',
+      description: 'Finance overview with account balances and spending insights.',
+      elements: [
+        el('header', 'Overview', 'LayoutDashboard'),
+        el('stat', 'Total Balance', 'Wallet'),
+        el('chart', 'Spending Chart', 'BarChart3'),
+        el('list', 'Recent Transactions', 'List'),
+      ],
+    });
+    screens.push({
+      name: 'Budgets',
+      regionType: 'budgets',
+      description: 'Budget categories with progress bars and alerts.',
+      elements: [
+        el('header', 'Budgets', 'PieChart'),
+        el('list', 'Category List', 'List'),
+        el('progress', 'Progress Bars', 'ProgressBar'),
+      ],
+      intentionallyIncomplete: true,
+    });
+  }
+
+  if (/\b(recipe|cook|food|meal|ingredient|kitchen)\b/.test(p)) {
+    screens.push({
+      name: 'Recipe Search',
+      regionType: 'search',
+      description: 'Search recipes by ingredient with curated collections.',
+      elements: [
+        el('search', 'Search by Ingredient', 'Search'),
+        el('chips', 'Collections', 'Boxes'),
+        el('grid', 'Recipe Grid', 'LayoutGrid'),
+      ],
+    });
+    screens.push({
+      name: 'Cooking Mode',
+      regionType: 'cooking',
+      description: 'Step-by-step cooking mode with timers and shopping list.',
+      elements: [
+        el('header', 'Step 1 of 6', 'ChefHat'),
+        el('image', 'Step Image', 'Image'),
+        el('timer', 'Step Timer', 'Timer'),
+        el('button', 'Next Step', 'ArrowRight'),
+      ],
+      intentionallyIncomplete: true,
+    });
+  }
+
+  if (/\b(chat|message|dm|dm|conversation|inbox)\b/.test(p)) {
+    screens.push({
+      name: 'Inbox',
+      regionType: 'inbox',
+      description: 'Conversation list with unread badges and previews.',
+      elements: [
+        el('search', 'Search Messages', 'Search'),
+        el('list', 'Conversation List', 'List'),
+        el('fab', 'New Message', 'Plus'),
+      ],
+    });
+    screens.push({
+      name: 'Conversation',
+      regionType: 'conversation',
+      description: 'Chat thread with bubbles, input, and attachments.',
+      elements: [
+        el('header', 'Contact Name', 'User'),
+        el('feed', 'Message Bubbles', 'MessageCircle'),
+        el('input', 'Message Input', 'Send'),
+      ],
+    });
+  }
+
+  // Always include a settings screen as a finishing touch.
+  screens.push({
+    name: 'Settings',
+    regionType: 'settings',
+    description: 'Preferences, account, and app configuration.',
+    elements: [
+      el('header', 'Settings', 'Settings'),
+      el('row', 'Account', 'User'),
+      el('row', 'Notifications', 'Bell'),
+      el('row', 'Appearance', 'Palette'),
+      el('row', 'About', 'Info'),
+    ],
+  });
+
+  // If nothing domain-specific matched, add a generic detail screen.
+  if (screens.length === 2) {
+    screens.splice(1, 0, {
+      name: 'Detail',
+      regionType: 'detail',
+      description: 'Primary content detail view for the app’s core entity.',
+      elements: [
+        el('header', 'Detail', 'FileText'),
+        el('image', 'Hero Image', 'Image'),
+        el('body', 'Content Body', 'FileText'),
+        el('button', 'Primary Action', 'ArrowRight'),
+      ],
+      intentionallyIncomplete: true,
+    });
+  }
+
+  return screens;
+}
+
+/* ===========================================================================
+ * 4. Utility helpers
+ * ========================================================================= */
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Apply the active color scheme to CSS custom properties on :root. */
+function applyColorScheme(scheme: ColorScheme): void {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.style.setProperty('--color-primary', scheme.primary);
+  root.style.setProperty('--color-secondary', scheme.secondary);
+  root.style.setProperty('--color-accent', scheme.accent);
+  root.style.setProperty('--color-background', scheme.background);
+  root.style.setProperty('--color-surface', scheme.surface);
+  root.style.setProperty('--color-text', scheme.text);
+}
+
+/* ===========================================================================
+ * 5–8. App component
+ * ========================================================================= */
+
+export default function App() {
+  /* ---- View & core entity state ---- */
+  const [view, setView] = useState<AppView>('prompt');
+  const [project, setProject] = useState<Project | null>(null);
+  const [stages, setStages] = useState<BuildStage[]>([]);
+  const [regions, setRegions] = useState<AppRegion[]>([]);
+  const [activeTab, setActiveTab] = useState<BuilderTab>('design');
+
+  /* ---- Theming ---- */
+  const [colorScheme, setColorScheme] = useState<ColorScheme>(
+    DEFAULT_COLOR_SCHEME.scheme
+  );
+  const [activeSchemeId, setActiveSchemeId] = useState<string>(
+    DEFAULT_COLOR_SCHEME.id
+  );
+
+  /* ---- Builder chrome ---- */
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [devicePreview, setDevicePreview] = useState<'mobile' | 'tablet' | 'desktop'>(
+    'mobile'
+  );
+
+  /* ---- Command palette & search ---- */
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  /* ---- Build streaming ---- */
+  const [activeLog, setActiveLog] = useState<string>('');
+  const [building, setBuilding] = useState(false);
+  const buildTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ---- Dashboard recent-project hint ---- */
+  const [recentProjectName, setRecentProjectName] = useState<string | undefined>();
+
+  /* ---- Misc loading/error for project open ---- */
+  const [openError, setOpenError] = useState<string | null>(null);
+
+  /* ---- Modal open flags ---- */
+  // Build tooling
+  const [exportOpen, setExportOpen] = useState(false);
+  const [deployOpen, setDeployOpen] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  // Design
+  const [screenTemplatesOpen, setScreenTemplatesOpen] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [typographyOpen, setTypographyOpen] = useState(false);
+  const [assetsOpen, setAssetsOpen] = useState(false);
+  const [designTokensOpen, setDesignTokensOpen] = useState(false);
+  const [componentInspectorOpen, setComponentInspectorOpen] = useState(false);
+  // Engagement / distribution
+  const [pushNotificationsOpen, setPushNotificationsOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [deepLinksOpen, setDeepLinksOpen] = useState(false);
+  const [analyticsEventsOpen, setAnalyticsEventsOpen] = useState(false);
+  // Data / backend
+  const [apiExplorerOpen, setApiExplorerOpen] = useState(false);
+  const [seedDataOpen, setSeedDataOpen] = useState(false);
+  const [dataExplorerOpen, setDataExplorerOpen] = useState(false);
+  const [envVarsOpen, setEnvVarsOpen] = useState(false);
+  const [webhooksOpen, setWebhooksOpen] = useState(false);
+  const [scheduledTasksOpen, setScheduledTasksOpen] = useState(false);
+  const [cacheManagerOpen, setCacheManagerOpen] = useState(false);
+  // Quality / ops
+  const [errorMonitorOpen, setErrorMonitorOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [a11yCheckerOpen, setA11yCheckerOpen] = useState(false);
+  const [securityScannerOpen, setSecurityScannerOpen] = useState(false);
+  const [auditTrailOpen, setAuditTrailOpen] = useState(false);
+  const [healthChecksOpen, setHealthChecksOpen] = useState(false);
+  const [backupsOpen, setBackupsOpen] = useState(false);
+  const [logViewerOpen, setLogViewerOpen] = useState(false);
+  // Team / release
+  const [teamManagementOpen, setTeamManagementOpen] = useState(false);
+  const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
+  // Experimentation
+  const [abTestingOpen, setAbTestingOpen] = useState(false);
+  const [aBTestingOpen, setABTestingOpen] = useState(false); // alias variant
+  const [featureFlagsOpen, setFeatureFlagsOpen] = useState(false);
+  const [localizationOpen, setLocalizationOpen] = useState(false);
+  const [navGraphOpen, setNavGraphOpen] = useState(false);
+  const [userJourneyOpen, setUserJourneyOpen] = useState(false);
+  // Devops / infra
+  const [ciPipelineOpen, setCIPipelineOpen] = useState(false);
+  const [customDomainsOpen, setCustomDomainsOpen] = useState(false);
+  const [oauthProvidersOpen, setOAuthProvidersOpen] = useState(false);
+  const [rateLimitingOpen, setRateLimitingOpen] = useState(false);
+  const [dependenciesOpen, setDependenciesOpen] = useState(false);
+  const [appConfigOpen, setAppConfigOpen] = useState(false);
+  const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  // Misc tools
+  const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
+  const [codeDiffOpen, setCodeDiffOpen] = useState(false);
+  const [apiKeysOpen, setApiKeysOpen] = useState(false);
+  const [smsConfigOpen, setSmsConfigOpen] = useState(false);
+  const [webhookTesterOpen, setWebhookTesterOpen] = useState(false);
+  const [formBuilderOpen, setFormBuilderOpen] = useState(false);
+  // Global
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  /* -------------------------------------------------------------------------
+   * 6. Key actions
+   * ----------------------------------------------------------------------- */
+
+  /** Start a brand-new build from a prompt + platform. */
+  const handleStart = useCallback(
+    async (prompt: string, platform: string) => {
+      const appType = detectAppType(prompt, platform);
+      const name = deriveAppName(prompt);
+      const scheme = DEFAULT_COLOR_SCHEME.scheme;
+
+      // 1. Insert the project row.
+      const { data: projRow, error: projErr } = await supabase
+        .from('projects')
+        .insert({
+          name,
+          prompt,
+          platform,
+          app_type: appType,
+          status: 'building',
+          config: { colorScheme: scheme },
+        })
+        .select()
+        .single();
+
+      if (projErr || !projRow) {
+        throw new Error(projErr?.message ?? 'Failed to create project.');
+      }
+
+      const newProject = projRow as Project;
+      setProject(newProject);
+      setRecentProjectName(newProject.name);
+      setColorScheme(scheme);
+      setActiveSchemeId(DEFAULT_COLOR_SCHEME.id);
+
+      // 2. Insert build stages.
+      const stageRows = BUILD_STAGES.map((s, i) => ({
+        project_id: newProject.id,
+        stage_name: s.name,
+        stage_type: s.type,
+        status: 'pending' as const,
+        logs: '',
+        sort_order: i,
+      }));
+
+      const { data: insertedStages, error: stagesErr } = await supabase
+        .from('build_stages')
+        .insert(stageRows)
+        .select();
+
+      if (stagesErr || !insertedStages) {
+        throw new Error(stagesErr?.message ?? 'Failed to create build stages.');
+      }
+      setStages(insertedStages as BuildStage[]);
+
+      // 3. Generate screens and insert app regions.
+      const screens = generateScreens(prompt);
+      const regionRows = screens.map((spec, i) => ({
+        project_id: newProject.id,
+        region_name: spec.name,
+        region_type: spec.regionType,
+        status: spec.intentionallyIncomplete ? 'incomplete' : 'complete',
+        spec,
+        description: spec.description,
+        sort_order: i,
+      }));
+
+      const { data: insertedRegions, error: regionsErr } = await supabase
+        .from('app_regions')
+        .insert(regionRows)
+        .select();
+
+      if (regionsErr || !insertedRegions) {
+        throw new Error(regionsErr?.message ?? 'Failed to create app regions.');
+      }
+      const regionList = insertedRegions as AppRegion[];
+      setRegions(regionList);
+      setSelectedRegionId(regionList[0]?.id ?? null);
+
+      // 4. Move to the builder and kick off the pipeline.
+      setView('builder');
+      setActiveTab('design');
+      setBuilding(true);
+      void runBuildPipeline(newProject.id, appType);
+    },
+    []
+  );
+
+  /**
+   * Sequentially walk each build stage, updating its status in Supabase and
+   * in local state, with simulated log streaming for a live-build feel.
+   */
+  const runBuildPipeline = useCallback(
+    async (projectId: string, _appType: string) => {
+      for (let i = 0; i < BUILD_STAGES.length; i++) {
+        const def = BUILD_STAGES[i];
+
+        // Mark in_progress.
+        setActiveLog(`${def.name}: starting…`);
+        const { data: inProg } = await supabase
+          .from('build_stages')
+          .update({ status: 'in_progress' })
+          .eq('project_id', projectId)
+          .eq('stage_type', def.type)
+          .select()
+          .single();
+
+        setStages((prev) =>
+          prev.map((s) =>
+            s.stage_type === def.type && s.project_id === projectId
+              ? { ...(inProg as BuildStage ?? s), status: 'in_progress' }
+              : s
+          )
+        );
+
+        // Stream logs line by line.
+        let accumulated = '';
+        for (const line of def.logs) {
+          accumulated += (accumulated ? '\n' : '') + line;
+          setActiveLog(`${def.name}\n${accumulated}`);
+          await sleep(420 + Math.random() * 480);
+        }
+
+        // Mark completed.
+        const { data: done } = await supabase
+          .from('build_stages')
+          .update({ status: 'completed', logs: accumulated })
+          .eq('project_id', projectId)
+          .eq('stage_type', def.type)
+          .select()
+          .single();
+
+        setStages((prev) =>
+          prev.map((s) =>
+            s.stage_type === def.type && s.project_id === projectId
+              ? { ...(done as BuildStage ?? s), status: 'completed', logs: accumulated }
+              : s
+          )
+        );
+      }
+
+      // Flip the project to ready.
+      await supabase
+        .from('projects')
+        .update({ status: 'ready', updated_at: new Date().toISOString() })
+        .eq('id', projectId);
+
+      setProject((prev) =>
+        prev && prev.id === projectId
+          ? { ...prev, status: 'ready', updated_at: new Date().toISOString() }
+          : prev
+      );
+      setBuilding(false);
+      setActiveLog('');
+    },
+    []
+  );
+
+  /** Mark a region (screen) as complete. */
+  const handleCompleteRegion = useCallback(
+    async (regionId: string) => {
+      const region = regions.find((r) => r.id === regionId);
+      if (!region) return;
+
+      setRegions((prev) =>
+        prev.map((r) => (r.id === regionId ? { ...r, status: 'complete' } : r))
+      );
+
+      await supabase
+        .from('app_regions')
+        .update({ status: 'complete' })
+        .eq('id', regionId);
+    },
+    [regions]
+  );
+
+  /** Load an existing project (from the dashboard) + its stages and regions. */
+  const handleOpenProject = useCallback(async (proj: Project) => {
+    setOpenError(null);
+    setProject(proj);
+    setRecentProjectName(proj.name);
+    setColorScheme(proj.config?.colorScheme ?? DEFAULT_COLOR_SCHEME.scheme);
+
+    // Resolve matching scheme id.
+    const matched = COLOR_SCHEMES.find(
+      (cs) =>
+        cs.scheme.primary === proj.config?.colorScheme?.primary
+    );
+    setActiveSchemeId(matched?.id ?? DEFAULT_COLOR_SCHEME.id);
+
+    try {
+      const [stagesRes, regionsRes] = await Promise.all([
+        supabase
+          .from('build_stages')
+          .select('*')
+          .eq('project_id', proj.id)
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('app_regions')
+          .select('*')
+          .eq('project_id', proj.id)
+          .order('sort_order', { ascending: true }),
+      ]);
+
+      if (stagesRes.error) throw stagesRes.error;
+      if (regionsRes.error) throw regionsRes.error;
+
+      setStages((stagesRes.data ?? []) as BuildStage[]);
+      const regionList = (regionsRes.data ?? []) as AppRegion[];
+      setRegions(regionList);
+      setSelectedRegionId(regionList[0]?.id ?? null);
+
+      const allDone =
+        regionList.length > 0 && regionList.every((r) => r.status === 'complete');
+      setBuilding(!allDone && proj.status === 'building');
+
+      setActiveTab('design');
+      setView('builder');
+    } catch (err) {
+      setOpenError(
+        err instanceof Error ? err.message : 'Failed to load project data.'
+      );
+      setView('builder');
+    }
+  }, []);
+
+  /** Reset everything and go back to the prompt screen. */
+  const handleNew = useCallback(() => {
+    if (buildTimer.current) {
+      clearTimeout(buildTimer.current);
+      buildTimer.current = null;
+    }
+    setProject(null);
+    setStages([]);
+    setRegions([]);
+    setSelectedRegionId(null);
+    setActiveTab('design');
+    setActiveLog('');
+    setBuilding(false);
+    setOpenError(null);
+    setColorScheme(DEFAULT_COLOR_SCHEME.scheme);
+    setActiveSchemeId(DEFAULT_COLOR_SCHEME.id);
+    setView('prompt');
+  }, []);
+
+  const handleHome = useCallback(() => {
+    if (project) setView('builder');
+    else setView('prompt');
+  }, [project]);
+
+  const handleDashboard = useCallback(() => setView('dashboard'), []);
+
+  /** Switch the active color scheme and persist it on the project. */
+  const handleColorSchemeChange = useCallback(
+    (def: ColorSchemeDefinition) => {
+      setColorScheme(def.scheme);
+      setActiveSchemeId(def.id);
+      applyColorScheme(def.scheme);
+      if (project) {
+        void supabase
+          .from('projects')
+          .update({ config: { colorScheme: def.scheme } })
+          .eq('id', project.id);
+        setProject((prev) =>
+          prev ? { ...prev, config: { colorScheme: def.scheme } } : prev
+        );
+      }
+    },
+    [project]
+  );
+
+  /* -------------------------------------------------------------------------
+   * 7. Keyboard shortcuts
+   * ----------------------------------------------------------------------- */
+
+  useEffect(() => {
+    applyColorScheme(colorScheme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+
+      // ⌘K — command palette
+      if (mod && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandOpen((o) => !o);
+        return;
+      }
+      // ⌘/ — search
+      if (mod && e.key === '/') {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+        return;
+      }
+      // ⌘B — toggle sidebar
+      if (mod && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setSidebarOpen((o) => !o);
+        return;
+      }
+      // ⌘Z — undo (placeholder)
+      if (mod && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        return;
+      }
+      // ⌘⇧Z — redo (placeholder)
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        return;
+      }
+      // ⌘E — export
+      if (mod && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        setExportOpen(true);
+        return;
+      }
+      // ⌘⇧D — deploy
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        setDeployOpen(true);
+        return;
+      }
+      // ⌘⇧S — store
+      if (mod && e.shiftKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        setStoreOpen(true);
+        return;
+      }
+
+      // ? — shortcuts help (only when not typing in a field)
+      const target = e.target as HTMLElement | null;
+      const typing =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.isContentEditable;
+      if (!mod && !typing && e.key === '?') {
+        e.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
+
+      // 1–6 — switch tabs (only in builder view, not while typing)
+      if (!mod && !typing && view === 'builder' && /^[1-6]$/.test(e.key)) {
+        e.preventDefault();
+        const tabs: BuilderTab[] = ['design', 'code', 'database', 'test', 'audit', 'deploy'];
+        setActiveTab(tabs[Number(e.key) - 1]);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [view]);
+
+  // Cleanup any pending build timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (buildTimer.current) clearTimeout(buildTimer.current);
+    };
+  }, []);
+
+  /* -------------------------------------------------------------------------
+   * 8. Render
+   * ----------------------------------------------------------------------- */
+
+  const buildComplete =
+    stages.length > 0 && stages.every((s) => s.status === 'completed');
+
+  /* ---- Prompt view ---- */
+  if (view === 'prompt') {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header onNew={handleNew} onHome={handleNew} onDashboard={() => setView('builder')} />
-        <ProjectDashboard onOpen={handleOpenProject} onNew={handleNew} />
-      </div>
+      <>
+        <PromptScreen onStart={handleStart} recentProjectName={recentProjectName} />
+        <ModalLayer
+          modals={[
+            { open: settingsOpen, onClose: () => setSettingsOpen(false), title: 'Settings' },
+            { open: shortcutsOpen, onClose: () => setShortcutsOpen(false), title: 'Keyboard shortcuts' },
+            { open: commandOpen, onClose: () => setCommandOpen(false), title: 'Command palette' },
+            { open: searchOpen, onClose: () => setSearchOpen(false), title: 'Search' },
+          ]}
+        />
+      </>
     );
   }
 
+  /* ---- Dashboard view ---- */
+  if (view === 'dashboard') {
+    return (
+      <>
+        <Header
+          onNew={handleNew}
+          onHome={handleHome}
+          onDashboard={handleDashboard}
+          showActions={false}
+        />
+        <ProjectDashboard onOpen={handleOpenProject} onNew={handleNew} />
+        <ModalLayer
+          modals={[
+            { open: settingsOpen, onClose: () => setSettingsOpen(false), title: 'Settings' },
+            { open: shortcutsOpen, onClose: () => setShortcutsOpen(false), title: 'Keyboard shortcuts' },
+            { open: commandOpen, onClose: () => setCommandOpen(false), title: 'Command palette' },
+            { open: searchOpen, onClose: () => setSearchOpen(false), title: 'Search' },
+          ]}
+        />
+      </>
+    );
+  }
+
+  /* ---- Builder view ---- */
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
       <Header
         projectName={project?.name}
         appType={project?.app_type}
         onNew={handleNew}
-        onHome={handleNew}
-        onDashboard={() => setView('dashboard')}
+        onHome={handleHome}
+        onDashboard={handleDashboard}
         onDeploy={() => setDeployOpen(true)}
         onExport={() => setExportOpen(true)}
         onStore={() => setStoreOpen(true)}
@@ -858,436 +1085,1073 @@ export default function App() {
         showActions
       />
 
-      {/* Builder toolbar */}
-      <div className="flex items-center gap-1 px-4 py-1.5 border-b border-slate-800 bg-slate-950/50 overflow-x-auto scrollbar-thin">
-        {BUILDER_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-              activeTab === tab.id ? 'bg-slate-800 text-slate-100' : 'text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-        <div className="flex-1" />
-        <button
-          onClick={() => setCommandOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          <CommandIcon className="w-3.5 h-3.5" />
-          Commands
-          <kbd className="text-[9px] border border-slate-700 rounded px-1">⌘K</kbd>
-        </button>
-        <button
-          onClick={() => setSearchOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          <SearchIcon className="w-3.5 h-3.5" />
-          Search
-        </button>
-        <button
-          onClick={() => setNotificationsOpen(true)}
-          className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          <Bell className="w-3.5 h-3.5" />
-          {incompleteRegions.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 text-[8px] text-white flex items-center justify-center font-bold">
-              {incompleteRegions.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setSettingsOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          <SettingsIcon className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          <LayoutGrid className="w-3.5 h-3.5" />
-          {sidebarOpen ? 'Hide' : 'Show'}
-        </button>
-      </div>
-
-      {/* Sub-toolbar for design tab */}
-      {activeTab === 'design' && (
-        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
-          <SubToolbarBtn icon={<LayoutTemplate className="w-3 h-3" />} label="Screen Templates" onClick={() => setScreenTemplateOpen(true)} />
-          <SubToolbarBtn icon={<ImageIcon className="w-3 h-3" />} label="Assets" onClick={() => setAssetOpen(true)} />
-          <SubToolbarBtn icon={<Type className="w-3 h-3" />} label="Typography" onClick={() => setTypographyOpen(true)} />
-          <SubToolbarBtn icon={<Workflow className="w-3 h-3" />} label="Flow" onClick={() => setNavGraphOpen(true)} />
-          <SubToolbarBtn icon={<MessageSquare className="w-3 h-3" />} label="Comments" onClick={() => setCommentsOpen(true)} />
-          <SubToolbarBtn icon={<Share2 className="w-3 h-3" />} label="Share" onClick={() => setShareOpen(true)} />
-          <SubToolbarBtn icon={<Monitor className="w-3 h-3" />} label="Devices" onClick={() => setDevicePreviewOpen(true)} />
-          <SubToolbarBtn icon={<SlidersHorizontal className="w-3 h-3" />} label="Inspector" onClick={() => setInspectorOpen(true)} />
-          <SubToolbarBtn icon={<Palette className="w-3 h-3" />} label="Tokens" onClick={() => setDesignTokensOpen(true)} />
-          <SubToolbarBtn icon={<A11yIcon className="w-3 h-3" />} label="A11y" onClick={() => setA11yOpen(true)} />
-          <SubToolbarBtn icon={<FormInput className="w-3 h-3" />} label="Forms" onClick={() => setFormBuilderOpen(true)} />
-          <SubToolbarBtn icon={<HardDrive className="w-3 h-3" />} label="Storage" onClick={() => setStorageOpen(true)} />
-          <SubToolbarBtn icon={<Mail className="w-3 h-3" />} label="Email Templates" onClick={() => setEmailTemplateOpen(true)} />
-          <SubToolbarBtn icon={<Globe className="w-3 h-3" />} label="i18n" onClick={() => setLocalizationOpen(true)} />
-          <div className="flex-1" />
-          <SubToolbarBtn icon={<ArrowRight className="w-3 h-3 rotate-180" />} label="Undo" onClick={undo} disabled={!canUndo} />
-          <SubToolbarBtn icon={<ArrowRight className="w-3 h-3" />} label="Redo" onClick={redo} disabled={!canRedo} />
+      {openError && (
+        <div className="border-b border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm text-rose-300">
+          {openError}
         </div>
       )}
 
-      {/* Sub-toolbar for deploy tab */}
-      {activeTab === 'deploy' && (
-        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
-          <SubToolbarBtn icon={<Rocket className="w-3 h-3" />} label="Deploy" onClick={() => setDeployOpen(true)} />
-          <SubToolbarBtn icon={<Send className="w-3 h-3" />} label="Push" onClick={() => setPushOpen(true)} />
-          <SubToolbarBtn icon={<Sparkles className="w-3 h-3" />} label="Onboarding" onClick={() => setOnboardingOpen(true)} />
-          <SubToolbarBtn icon={<Code2 className="w-3 h-3" />} label="API" onClick={() => setApiOpen(true)} />
-          <SubToolbarBtn icon={<Bug className="w-3 h-3" />} label="Errors" onClick={() => setErrorOpen(true)} />
-          <SubToolbarBtn icon={<Share2 className="w-3 h-3" />} label="Share" onClick={() => setShareOpen(true)} />
-          <SubToolbarBtn icon={<FlaskConical className="w-3 h-3" />} label="A/B Test" onClick={() => setAbTestingOpen(true)} />
-          <SubToolbarBtn icon={<FileText className="w-3 h-3" />} label="Release Notes" onClick={() => setReleaseNotesOpen(true)} />
-          <SubToolbarBtn icon={<Link2 className="w-3 h-3" />} label="Deep Links" onClick={() => setDeepLinkOpen(true)} />
-          <SubToolbarBtn icon={<Flag className="w-3 h-3" />} label="Flags" onClick={() => setFeatureFlagsOpen(true)} />
-          <SubToolbarBtn icon={<GitBranchIcon className="w-3 h-3" />} label="CI/CD" onClick={() => setCIPipelineOpen(true)} />
-          <SubToolbarBtn icon={<ShieldCheck className="w-3 h-3" />} label="Security" onClick={() => setSecurityOpen(true)} />
-          <SubToolbarBtn icon={<Users className="w-3 h-3" />} label="Team" onClick={() => setTeamOpen(true)} />
-          <SubToolbarBtn icon={<StoreIcon className="w-3 h-3" />} label="Integrations" onClick={() => setIntegrationsOpen(true)} />
-          <SubToolbarBtn icon={<HardDriveDownload className="w-3 h-3" />} label="Backups" onClick={() => setBackupOpen(true)} />
-          <SubToolbarBtn icon={<ScrollText className="w-3 h-3" />} label="Audit Trail" onClick={() => setAuditTrailOpen(true)} />
-          <SubToolbarBtn icon={<Globe className="w-3 h-3" />} label="Domains" onClick={() => setCustomDomainOpen(true)} />
-          <SubToolbarBtn icon={<Settings2 className="w-3 h-3" />} label="Project" onClick={() => setProjectSettingsOpen(true)} />
-        </div>
-      )}
+      <BuilderToolbar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen((o) => !o)}
+        onCommand={() => setCommandOpen(true)}
+        onSearch={() => setSearchOpen(true)}
+        onSettings={() => setSettingsOpen(true)}
+        buildComplete={buildComplete}
+        building={building}
+      />
 
-      {/* Sub-toolbar for database tab */}
-      {activeTab === 'database' && (
-        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
-          <SubToolbarBtn icon={<DatabaseIcon className="w-3 h-3" />} label="Seed Data" onClick={() => setSeedOpen(true)} />
-          <SubToolbarBtn icon={<Code2 className="w-3 h-3" />} label="API" onClick={() => setApiOpen(true)} />
-          <SubToolbarBtn icon={<DbIconExplore className="w-3 h-3" />} label="Data Explorer" onClick={() => setDataExplorerOpen(true)} />
-          <SubToolbarBtn icon={<Webhook className="w-3 h-3" />} label="Webhooks" onClick={() => setWebhookOpen(true)} />
-          <SubToolbarBtn icon={<Webhook className="w-3 h-3" />} label="Webhook Tester" onClick={() => setWebhookTesterOpen(true)} />
-          <SubToolbarBtn icon={<Clock className="w-3 h-3" />} label="Cron Jobs" onClick={() => setScheduledOpen(true)} />
-          <SubToolbarBtn icon={<KeyRound className="w-3 h-3" />} label="Env Vars" onClick={() => setEnvVarsOpen(true)} />
-          <SubToolbarBtn icon={<DatabaseIcon className="w-3 h-3" />} label="Migrations" onClick={() => setDbMigrationOpen(true)} />
-          <SubToolbarBtn icon={<ZapIcon className="w-3 h-3" />} label="Cache" onClick={() => setCacheOpen(true)} />
-          <SubToolbarBtn icon={<GaugeIcon className="w-3 h-3" />} label="Rate Limit" onClick={() => setRateLimitOpen(true)} />
-          <SubToolbarBtn icon={<Terminal className="w-3 h-3" />} label="Logs" onClick={() => setLogViewerOpen(true)} />
-        </div>
-      )}
+      <div className="flex flex-1 overflow-hidden">
+        <BuilderSidebar
+          open={sidebarOpen}
+          regions={regions}
+          selectedRegionId={selectedRegionId}
+          onSelect={setSelectedRegionId}
+          onComplete={handleCompleteRegion}
+          onAddScreen={() => setScreenTemplatesOpen(true)}
+        />
 
-      {/* Sub-toolbar for audit tab */}
-      {activeTab === 'audit' && (
-        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
-          <SubToolbarBtn icon={<ShieldCheck className="w-3 h-3" />} label="Security Scan" onClick={() => setSecurityOpen(true)} />
-          <SubToolbarBtn icon={<A11yIcon className="w-3 h-3" />} label="Accessibility" onClick={() => setA11yOpen(true)} />
-          <SubToolbarBtn icon={<ScrollText className="w-3 h-3" />} label="Audit Trail" onClick={() => setAuditTrailOpen(true)} />
-          <SubToolbarBtn icon={<Package className="w-3 h-3" />} label="Dependencies" onClick={() => setDepsOpen(true)} />
-          <SubToolbarBtn icon={<GitCompare className="w-3 h-3" />} label="Code Diff" onClick={() => setCodeDiffOpen(true)} />
-          <SubToolbarBtn icon={<ListChecks className="w-3 h-3" />} label="Bulk Actions" onClick={() => setBulkActionsOpen(true)} />
-        </div>
-      )}
-
-      {/* Sub-toolbar for analytics tab */}
-      {activeTab === 'analytics' && (
-        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
-          <SubToolbarBtn icon={<Target className="w-3 h-3" />} label="Events & Funnels" onClick={() => setAnalyticsEventsOpen(true)} />
-          <SubToolbarBtn icon={<Route className="w-3 h-3" />} label="User Journeys" onClick={() => setJourneyOpen(true)} />
-          <SubToolbarBtn icon={<FlaskConical className="w-3 h-3" />} label="A/B Tests" onClick={() => setAbTestingOpen(true)} />
-          <SubToolbarBtn icon={<HeartPulse className="w-3 h-3" />} label="Health" onClick={() => setHealthCheckOpen(true)} />
-          <SubToolbarBtn icon={<Terminal className="w-3 h-3" />} label="Logs" onClick={() => setLogViewerOpen(true)} />
-        </div>
-      )}
-
-      {/* Sub-toolbar for test tab */}
-      {activeTab === 'test' && (
-        <div className="flex items-center gap-1.5 px-4 py-1 border-b border-slate-800 bg-slate-950/30 overflow-x-auto scrollbar-thin">
-          <SubToolbarBtn icon={<FlaskConical className="w-3 h-3" />} label="A/B Testing" onClick={() => setAbTestingOpen(true)} />
-          <SubToolbarBtn icon={<GitBranchIcon className="w-3 h-3" />} label="CI/CD Pipeline" onClick={() => setCIPipelineOpen(true)} />
-          <SubToolbarBtn icon={<Bug className="w-3 h-3" />} label="Error Monitor" onClick={() => setErrorOpen(true)} />
-          <SubToolbarBtn icon={<ShieldCheck className="w-3 h-3" />} label="Security" onClick={() => setSecurityOpen(true)} />
-        </div>
-      )}
-
-      <div className="flex-1 flex overflow-hidden">
-        {sidebarOpen && (
-          <div className="w-72 shrink-0 border-r border-slate-800 bg-slate-950/50 flex flex-col max-h-[calc(100vh-160px)] hidden lg:flex">
-            <BuildStages stages={stages} activeLog={activeLog} />
-          </div>
-        )}
-
-        <div className="flex-1 flex overflow-hidden min-w-0">
-          {activeTab === 'design' && (
-            <DesignTab
-              regions={regions}
-              colorScheme={colorScheme}
-              appName={project?.name ?? 'My App'}
-              onRegionClick={setModalRegion}
-              onColorChange={handleColorChange}
-              onAddElement={handleAddElement}
-              onScreenFlow={() => {}}
-              showGrid={prefs.showGrid}
-            />
-          )}
-          {activeTab === 'code' && (
-            <CodeViewer regions={regions} colorScheme={colorScheme} appName={project?.name ?? 'My App'} />
-          )}
-          {activeTab === 'database' && <DatabaseTab regions={regions} appName={project?.name ?? 'My App'} />}
-          {activeTab === 'test' && <TestPanel regions={regions} appName={project?.name ?? 'My App'} />}
-          {activeTab === 'audit' && (
-            <AuditPanel regions={regions} colorScheme={colorScheme} platform={project?.platform ?? 'both'} />
-          )}
-          {activeTab === 'analytics' && (
-            <AnalyticsDashboard screenCount={regions.length} appName={project?.name ?? 'My App'} />
-          )}
-          {activeTab === 'performance' && <PerformanceProfiler screenCount={regions.length} />}
-          {activeTab === 'deploy' && (
-            <DeployTab
-              regions={regions}
-              stages={stages}
-              buildComplete={buildComplete}
-              incompleteCount={incompleteRegions.length}
-              onDeploy={() => setDeployOpen(true)}
-              onExport={() => setExportOpen(true)}
-              onStore={() => setStoreOpen(true)}
-              onVersions={() => setVersionsOpen(true)}
-              onPush={() => setPushOpen(true)}
-              onOnboarding={() => setOnboardingOpen(true)}
-              onApi={() => setApiOpen(true)}
-              onShare={() => setShareOpen(true)}
-              onErrors={() => setErrorOpen(true)}
-            />
-          )}
-        </div>
-
-        <div className="w-80 shrink-0 border-l border-slate-800 bg-slate-950/50 flex flex-col max-h-[calc(100vh-160px)] hidden xl:flex">
-          <RightSidebar
+        <main className="flex-1 overflow-y-auto">
+          <BuilderContent
             activeTab={activeTab}
-            regions={regions}
+            project={project}
             stages={stages}
+            regions={regions}
+            selectedRegionId={selectedRegionId}
+            onSelectRegion={setSelectedRegionId}
+            onCompleteRegion={handleCompleteRegion}
             colorScheme={colorScheme}
-            platform={project?.platform as Platform}
-            appName={project?.name ?? ''}
-            appType={project?.app_type ?? 'general'}
-            isBuilding={isBuilding}
-            buildComplete={buildComplete}
-            incompleteCount={incompleteRegions.length}
-            onDeploy={() => setDeployOpen(true)}
+            activeSchemeId={activeSchemeId}
+            onSchemeChange={handleColorSchemeChange}
+            devicePreview={devicePreview}
+            onDeviceChange={setDevicePreview}
+            onOpenColorPicker={() => setColorPickerOpen(true)}
+            onOpenTypography={() => setTypographyOpen(true)}
+            onOpenAssets={() => setAssetsOpen(true)}
+            onOpenDesignTokens={() => setDesignTokensOpen(true)}
+            onOpenApiExplorer={() => setApiExplorerOpen(true)}
+            onOpenSeedData={() => setSeedDataOpen(true)}
+            onOpenDataExplorer={() => setDataExplorerOpen(true)}
+            onOpenDeploy={() => setDeployOpen(true)}
+            onOpenExport={() => setExportOpen(true)}
+            building={building}
+            activeLog={activeLog}
           />
-        </div>
+        </main>
       </div>
 
-      {/* All modals */}
-      <RegionModal region={modalRegion} onClose={() => setModalRegion(null)} onComplete={handleCompleteRegion} />
-      <DeployDialog open={deployOpen} onClose={() => setDeployOpen(false)} platform={project?.platform as Platform} appName={project?.name ?? ''} buildComplete={buildComplete} />
-      <AppStoreAssets open={storeOpen} onClose={() => setStoreOpen(false)} appName={project?.name ?? ''} appType={project?.app_type ?? 'general'} colorScheme={colorScheme} regions={regions} />
-      <VersionHistory open={versionsOpen} onClose={() => setVersionsOpen(false)} appName={project?.name ?? ''} screenCount={regions.length} />
-      <ExportPanel open={exportOpen} onClose={() => setExportOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''} />
-      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} commands={commands} />
-      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} regions={regions} onRegionSelect={setModalRegion} />
-      <TypographyEditorModal open={typographyOpen} onClose={() => setTypographyOpen(false)} config={typography} onChange={setTypography} colorScheme={colorScheme} />
-      <ScreenTemplatePicker open={screenTemplateOpen} onClose={() => setScreenTemplateOpen(false)} onSelect={handleAddScreenFromTemplate} />
-      <PushComposer open={pushOpen} onClose={() => setPushOpen(false)} appName={project?.name ?? ''} />
-      <OnboardingBuilder open={onboardingOpen} onClose={() => setOnboardingOpen(false)} appName={project?.name ?? ''} />
-      <ApiExplorer open={apiOpen} onClose={() => setApiOpen(false)} appType={project?.app_type ?? 'general'} screenCount={regions.length} />
-      <SeedDataPanel open={seedOpen} onClose={() => setSeedOpen(false)} appType={project?.app_type ?? 'general'} />
-      <ErrorMonitor open={errorOpen} onClose={() => setErrorOpen(false)} screenCount={regions.length} />
-      <CommentsPanel open={commentsOpen} onClose={() => setCommentsOpen(false)} regions={regions} />
-      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} appName={project?.name ?? ''} />
-      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} prefs={prefs} onChange={setPrefs} />
-      <NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} appName={project?.name ?? ''} />
-      <UserJourneyMapper open={journeyOpen} onClose={() => setJourneyOpen(false)} regions={regions} />
-      <NavigationGraph open={navGraphOpen} onClose={() => setNavGraphOpen(false)} regions={regions} />
-      <ComponentInspector open={inspectorOpen} onClose={() => setInspectorOpen(false)} regions={regions} />
-      <DesignTokensManager open={designTokensOpen} onClose={() => setDesignTokensOpen(false)} colorScheme={colorScheme} />
-      <AccessibilityChecker open={a11yOpen} onClose={() => setA11yOpen(false)} regions={regions} colorScheme={colorScheme} />
-      <ReleaseNotesGenerator open={releaseNotesOpen} onClose={() => setReleaseNotesOpen(false)} appName={project?.name ?? ''} regions={regions} version="1.0.0" />
-      <DeepLinkConfigurator open={deepLinkOpen} onClose={() => setDeepLinkOpen(false)} appName={project?.name ?? ''} regions={regions} />
-      <DevicePreviewSwitcher open={devicePreviewOpen} onClose={() => setDevicePreviewOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''} />
-      <EmailTemplateEditor open={emailTemplateOpen} onClose={() => setEmailTemplateOpen(false)} appName={project?.name ?? ''} />
-      <CustomDomainConfig open={customDomainOpen} onClose={() => setCustomDomainOpen(false)} appName={project?.name ?? ''} />
-      <AppConfigEditor open={appConfigOpen} onClose={() => setAppConfigOpen(false)} appName={project?.name ?? ''} />
-      <BulkActionsPanel open={bulkActionsOpen} onClose={() => setBulkActionsOpen(false)} regions={regions} />
-      <ProjectSettings open={projectSettingsOpen} onClose={() => setProjectSettingsOpen(false)} project={project} />
-      <ABTestingPanel open={aBTestingPanelOpen} onClose={() => setaBTestingPanelOpen(false)} />
-      <AIAnomalyDetector open={aIAnomalyDetectorOpen} onClose={() => setaIAnomalyDetectorOpen(false)} />
-      <AIAppValuationCalculator open={aIAppValuationCalculatorOpen} onClose={() => setaIAppValuationCalculatorOpen(false)} appName={project?.name ?? ''} />
-      <AICognitiveLoadAnalyzer open={aICognitiveLoadAnalyzerOpen} onClose={() => setaICognitiveLoadAnalyzerOpen(false)} regions={regions} />
-      <AICompetitorGapAnalyzer open={aICompetitorGapAnalyzerOpen} onClose={() => setaICompetitorGapAnalyzerOpen(false)} appName={project?.name ?? ''} />
-      <AICritiquePersona open={aICritiquePersonaOpen} onClose={() => setaICritiquePersonaOpen(false)} regions={regions} appName={project?.name ?? ''} />
-      <AIFrictionScore open={aIFrictionScoreOpen} onClose={() => setaIFrictionScoreOpen(false)} regions={regions} />
-      <AIHeatmapPredictor open={aIHeatmapPredictorOpen} onClose={() => setaIHeatmapPredictorOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''}  />
-      <AIMonetizationStrategist open={aIMonetizationStrategistOpen} onClose={() => setaIMonetizationStrategistOpen(false)} appName={project?.name ?? ''} />
-      <AISecurityPatchRecommender open={aISecurityPatchRecommenderOpen} onClose={() => setaISecurityPatchRecommenderOpen(false)} />
-      <APIKeyManager open={aPIKeyManagerOpen} onClose={() => setaPIKeyManagerOpen(false)} />
-      <AnalyticsEvents open={analyticsEventsOpen} onClose={() => setAnalyticsEventsOpen(false)} />
-      <AppMarketSizingTool open={appMarketSizingToolOpen} onClose={() => setappMarketSizingToolOpen(false)} />
-      <AppStoreRankingPredictor open={appStoreRankingPredictorOpen} onClose={() => setappStoreRankingPredictorOpen(false)} appName={project?.name ?? ''} />
-      <AuditTrailPanel open={auditTrailPanelOpen} onClose={() => setauditTrailPanelOpen(false)} />
-      <BackupManager open={backupManagerOpen} onClose={() => setbackupManagerOpen(false)} />
-      <BatteryImpactProfiler open={batteryImpactProfilerOpen} onClose={() => setbatteryImpactProfilerOpen(false)} regions={regions} />
-      <BundleSizeTreemap open={bundleSizeTreemapOpen} onClose={() => setbundleSizeTreemapOpen(false)} />
-      <CIPipelineVisualizer open={cIPipelineVisualizerOpen} onClose={() => setcIPipelineVisualizerOpen(false)} />
-      <CacheManager open={cacheManagerOpen} onClose={() => setcacheManagerOpen(false)} />
-      <CodeDiffViewer open={codeDiffViewerOpen} onClose={() => setcodeDiffViewerOpen(false)} />
-      <CodeReviewAssignment open={codeReviewAssignmentOpen} onClose={() => setcodeReviewAssignmentOpen(false)} />
-      <CollaborativeEditingPanel open={collaborativeEditingPanelOpen} onClose={() => setcollaborativeEditingPanelOpen(false)} />
-      <ColorPsychologyEngine open={colorPsychologyEngineOpen} onClose={() => setcolorPsychologyEngineOpen(false)} />
-      <CompetitiveLandscapeMapper open={competitiveLandscapeMapperOpen} onClose={() => setcompetitiveLandscapeMapperOpen(false)} />
-      <ComponentStorybook open={componentStorybookOpen} onClose={() => setcomponentStorybookOpen(false)} />
-      <ContextMenuBar open={contextMenuBarOpen} onClose={() => setcontextMenuBarOpen(false)} />
-      <CookieConsentDesigner open={cookieConsentDesignerOpen} onClose={() => setcookieConsentDesignerOpen(false)} />
-      <CrossDeviceScreenshotDiff open={crossDeviceScreenshotDiffOpen} onClose={() => setcrossDeviceScreenshotDiffOpen(false)} />
-      <CustomizableDashboard open={customizableDashboardOpen} onClose={() => setcustomizableDashboardOpen(false)} />
-      <DataExplorer open={dataExplorerOpen} onClose={() => setDataExplorerOpen(false)} />
-      <DataFlowVisualizer open={dataFlowVisualizerOpen} onClose={() => setdataFlowVisualizerOpen(false)} />
-      <DataRetentionPolicyBuilder open={dataRetentionPolicyBuilderOpen} onClose={() => setdataRetentionPolicyBuilderOpen(false)} />
-      <DatabaseMigrationManager open={databaseMigrationManagerOpen} onClose={() => setdatabaseMigrationManagerOpen(false)} />
-      <DependencyManager open={dependencyManagerOpen} onClose={() => setdependencyManagerOpen(false)} />
-      <DesignReviewSystem open={designReviewSystemOpen} onClose={() => setdesignReviewSystemOpen(false)} />
-      <EdgeFunctionVisualBuilder open={edgeFunctionVisualBuilderOpen} onClose={() => setedgeFunctionVisualBuilderOpen(false)} />
-      <EmailDigestSettings open={emailDigestSettingsOpen} onClose={() => setemailDigestSettingsOpen(false)} />
-      <EmptyStateDesigner open={emptyStateDesignerOpen} onClose={() => setemptyStateDesignerOpen(false)} />
-      <EncryptionAuditDashboard open={encryptionAuditDashboardOpen} onClose={() => setencryptionAuditDashboardOpen(false)} />
-      <EnvVarsManager open={envVarsManagerOpen} onClose={() => setenvVarsManagerOpen(false)} />
-      <FeatureFlagsManager open={featureFlagsManagerOpen} onClose={() => setfeatureFlagsManagerOpen(false)} />
-      <FeatureRequestBoard open={featureRequestBoardOpen} onClose={() => setfeatureRequestBoardOpen(false)} />
-      <FeedbackCollector open={feedbackCollectorOpen} onClose={() => setfeedbackCollectorOpen(false)} />
-      <FontSizeAdjuster open={fontSizeAdjusterOpen} onClose={() => setfontSizeAdjusterOpen(false)} />
-      <FormBuilder open={formBuilderOpen} onClose={() => setFormBuilderOpen(false)} />
-      <GDPRComplianceScanner open={gDPRComplianceScannerOpen} onClose={() => setgDPRComplianceScannerOpen(false)} />
-      <GamificationSystem open={gamificationSystemOpen} onClose={() => setgamificationSystemOpen(false)} />
-      <GraphQLSchemaVisualDesigner open={graphQLSchemaVisualDesignerOpen} onClose={() => setgraphQLSchemaVisualDesignerOpen(false)} />
-      <GrowthLoopVisualizer open={growthLoopVisualizerOpen} onClose={() => setgrowthLoopVisualizerOpen(false)} />
-      <HealthCheckDashboard open={healthCheckDashboardOpen} onClose={() => sethealthCheckDashboardOpen(false)} />
-      <ImageCompressionSettings open={imageCompressionSettingsOpen} onClose={() => setimageCompressionSettingsOpen(false)} />
-      <IntegrationMarketplace open={integrationMarketplaceOpen} onClose={() => setintegrationMarketplaceOpen(false)} />
-      <InteractiveRoadmap open={interactiveRoadmapOpen} onClose={() => setinteractiveRoadmapOpen(false)} />
-      <InvestorPitchDeckGenerator open={investorPitchDeckGeneratorOpen} onClose={() => setinvestorPitchDeckGeneratorOpen(false)} appName={project?.name ?? ''} />
-      <KeyboardShortcutsMap open={keyboardShortcutsMapOpen} onClose={() => setkeyboardShortcutsMapOpen(false)} />
-      <LighthouseScorePredictor open={lighthouseScorePredictorOpen} onClose={() => setlighthouseScorePredictorOpen(false)} />
-      <LocalizationEditor open={localizationEditorOpen} onClose={() => setlocalizationEditorOpen(false)} />
-      <LogViewer open={logViewerOpen} onClose={() => setLogViewerOpen(false)} />
-      <MemoryLeakVisualizer open={memoryLeakVisualizerOpen} onClose={() => setmemoryLeakVisualizerOpen(false)} />
-      <MicroInteractionLibrary open={microInteractionLibraryOpen} onClose={() => setmicroInteractionLibraryOpen(false)} />
-      <MiniMapNavigator open={miniMapNavigatorOpen} onClose={() => setminiMapNavigatorOpen(false)} regions={regions} />
-      <MobileResponsivePreview open={mobileResponsivePreviewOpen} onClose={() => setmobileResponsivePreviewOpen(false)} />
-      <NetworkConditionSimulator open={networkConditionSimulatorOpen} onClose={() => setnetworkConditionSimulatorOpen(false)} />
-      <NotificationPreferences open={notificationPreferencesOpen} onClose={() => setnotificationPreferencesOpen(false)} />
-      <OAuthProvidersConfig open={oAuthProvidersConfigOpen} onClose={() => setoAuthProvidersConfigOpen(false)} />
-      <OfflineFirstSyncDesigner open={offlineFirstSyncDesignerOpen} onClose={() => setofflineFirstSyncDesignerOpen(false)} />
-      <OnboardingTour open={onboardingTourOpen} onClose={() => setonboardingTourOpen(false)} />
-      <PIIDataScanner open={pIIDataScannerOpen} onClose={() => setpIIDataScannerOpen(false)} />
-      <PageTransitionConfig open={pageTransitionConfigOpen} onClose={() => setpageTransitionConfigOpen(false)} />
-      <PenetrationTestReportGenerator open={penetrationTestReportGeneratorOpen} onClose={() => setpenetrationTestReportGeneratorOpen(false)} />
-      <PermissionMatrixVisualizer open={permissionMatrixVisualizerOpen} onClose={() => setpermissionMatrixVisualizerOpen(false)} />
-      <PinnedFavoritesBar open={pinnedFavoritesBarOpen} onClose={() => setpinnedFavoritesBarOpen(false)} />
-      <PlatformAnalytics open={platformAnalyticsOpen} onClose={() => setplatformAnalyticsOpen(false)} />
-      <PlatformLanguageSwitcher open={platformLanguageSwitcherOpen} onClose={() => setplatformLanguageSwitcherOpen(false)} />
-      <PredictiveChurnIndicator open={predictiveChurnIndicatorOpen} onClose={() => setpredictiveChurnIndicatorOpen(false)} />
-      <PricingStrategyABTester open={pricingStrategyABTesterOpen} onClose={() => setpricingStrategyABTesterOpen(false)} />
-      <PrivacyPolicyAutoGenerator open={privacyPolicyAutoGeneratorOpen} onClose={() => setprivacyPolicyAutoGeneratorOpen(false)} appName={project?.name ?? ''} />
-      <RateLimitConfig open={rateLimitConfigOpen} onClose={() => setrateLimitConfigOpen(false)} />
-      <ReducedMotionSettings open={reducedMotionSettingsOpen} onClose={() => setreducedMotionSettingsOpen(false)} />
-      <ReferralProgramDesigner open={referralProgramDesignerOpen} onClose={() => setreferralProgramDesignerOpen(false)} />
-      <ResponsiveBreakpointDebugger open={responsiveBreakpointDebuggerOpen} onClose={() => setresponsiveBreakpointDebuggerOpen(false)} colorScheme={colorScheme} appName={project?.name ?? ''} />
-      <RetinaDisplaySettings open={retinaDisplaySettingsOpen} onClose={() => setretinaDisplaySettingsOpen(false)} />
-      <RevenueProjectionEngine open={revenueProjectionEngineOpen} onClose={() => setrevenueProjectionEngineOpen(false)} />
-      <ReviewSentimentAnalyzer open={reviewSentimentAnalyzerOpen} onClose={() => setreviewSentimentAnalyzerOpen(false)} />
-      <SMSConfig open={sMSConfigOpen} onClose={() => setsMSConfigOpen(false)} />
-      <ScheduledTasks open={scheduledTasksOpen} onClose={() => setscheduledTasksOpen(false)} />
-      <SecurityScanner open={securityScannerOpen} onClose={() => setsecurityScannerOpen(false)} />
-      <SettingsExportImport open={settingsExportImportOpen} onClose={() => setsettingsExportImportOpen(false)} />
-      <SkeletonLoadingPreview open={skeletonLoadingPreviewOpen} onClose={() => setskeletonLoadingPreviewOpen(false)} />
-      <SmartCacheIndicator open={smartCacheIndicatorOpen} onClose={() => setsmartCacheIndicatorOpen(false)} />
-      <SmartDesignSystemGenerator open={smartDesignSystemGeneratorOpen} onClose={() => setsmartDesignSystemGeneratorOpen(false)} colorScheme={colorScheme} />
-      <SprintPlanner open={sprintPlannerOpen} onClose={() => setsprintPlannerOpen(false)} />
-      <StorageManager open={storageManagerOpen} onClose={() => setstorageManagerOpen(false)} />
-      <SyntheticUserSimulator open={syntheticUserSimulatorOpen} onClose={() => setsyntheticUserSimulatorOpen(false)} regions={regions} colorScheme={colorScheme} appName={project?.name ?? ''} />
-      <TeamPanel open={teamPanelOpen} onClose={() => setteamPanelOpen(false)} />
-      <TimelineAnimationComposer open={timelineAnimationComposerOpen} onClose={() => settimelineAnimationComposerOpen(false)} />
-      <UndoTimeline open={undoTimelineOpen} onClose={() => setundoTimelineOpen(false)} />
-      <ViralCoefficientCalculator open={viralCoefficientCalculatorOpen} onClose={() => setviralCoefficientCalculatorOpen(false)} />
-      <VisualGestureBuilder open={visualGestureBuilderOpen} onClose={() => setvisualGestureBuilderOpen(false)} />
-      <VisualRegexBuilder open={visualRegexBuilderOpen} onClose={() => setvisualRegexBuilderOpen(false)} />
-      <VisualStateMachineEditor open={visualStateMachineEditorOpen} onClose={() => setvisualStateMachineEditorOpen(false)} />
-      <VoiceCommandPanel open={voiceCommandPanelOpen} onClose={() => setvoiceCommandPanelOpen(false)} />
-      <WebSocketEventDesigner open={webSocketEventDesignerOpen} onClose={() => setwebSocketEventDesignerOpen(false)} />
-      <WebhookManager open={webhookManagerOpen} onClose={() => setwebhookManagerOpen(false)} />
-      <WebhookTester open={webhookTesterOpen} onClose={() => setWebhookTesterOpen(false)} />
-      <WorkspaceSwitcher open={workspaceSwitcherOpen} onClose={() => setworkspaceSwitcherOpen(false)} />
-      <AICodeCompletion open={aICodeCompletionOpen} onClose={() => setaICodeCompletionOpen(false)} />
-      <ARCoreSceneConfig open={aRCoreSceneConfigOpen} onClose={() => setaRCoreSceneConfigOpen(false)} />
-      <ARKitSceneConfig open={aRKitSceneConfigOpen} onClose={() => setaRKitSceneConfigOpen(false)} />
-      <AVIFConverter open={aVIFConverterOpen} onClose={() => setaVIFConverterOpen(false)} />
-      <AWSAmplifySetup open={aWSAmplifySetupOpen} onClose={() => setaWSAmplifySetupOpen(false)} />
-      <AndroidKeystoreManager open={androidKeystoreManagerOpen} onClose={() => setandroidKeystoreManagerOpen(false)} />
-      <AndroidWidgetBuilder open={androidWidgetBuilderOpen} onClose={() => setandroidWidgetBuilderOpen(false)} />
-      <AppAttestationConfig open={appAttestationConfigOpen} onClose={() => setappAttestationConfigOpen(false)} />
-      <AppleWatchBuilder open={appleWatchBuilderOpen} onClose={() => setappleWatchBuilderOpen(false)} />
-      <BiometricAuthConfig open={biometricAuthConfigOpen} onClose={() => setbiometricAuthConfigOpen(false)} />
-      <ContainerQueriesBuilder open={containerQueriesBuilderOpen} onClose={() => setcontainerQueriesBuilderOpen(false)} />
-      <CoreMLModelIntegrator open={coreMLModelIntegratorOpen} onClose={() => setcoreMLModelIntegratorOpen(false)} />
-      <DarkModeDesigner open={darkModeDesignerOpen} onClose={() => setdarkModeDesignerOpen(false)} />
-      <DynamicColorThemes open={dynamicColorThemesOpen} onClose={() => setdynamicColorThemesOpen(false)} />
-      <DynamicIslandConfig open={dynamicIslandConfigOpen} onClose={() => setdynamicIslandConfigOpen(false)} />
-      <E2EEConfig open={e2EEConfigOpen} onClose={() => sete2EEConfigOpen(false)} />
-      <ESLintConfigEditor open={eSLintConfigEditorOpen} onClose={() => seteSLintConfigEditorOpen(false)} />
-      <EdgeFunctionDeployer open={edgeFunctionDeployerOpen} onClose={() => setedgeFunctionDeployerOpen(false)} />
-      <EnergyMetricsPanel open={energyMetricsPanelOpen} onClose={() => setenergyMetricsPanelOpen(false)} />
-      <FaceIDConfig open={faceIDConfigOpen} onClose={() => setfaceIDConfigOpen(false)} />
-      <FirebaseConfig open={firebaseConfigOpen} onClose={() => setfirebaseConfigOpen(false)} />
-      <FoldableSupportConfig open={foldableSupportConfigOpen} onClose={() => setfoldableSupportConfigOpen(false)} />
-      <GitHubActionsBuilder open={gitHubActionsBuilderOpen} onClose={() => setgitHubActionsBuilderOpen(false)} />
-      <GlassmorphismDesigner open={glassmorphismDesignerOpen} onClose={() => setglassmorphismDesignerOpen(false)} />
-      <GraphQLClientBuilder open={graphQLClientBuilderOpen} onClose={() => setgraphQLClientBuilderOpen(false)} />
-      <JetpackComposePreview open={jetpackComposePreviewOpen} onClose={() => setjetpackComposePreviewOpen(false)} />
-      <KotlinCodeGenerator open={kotlinCodeGeneratorOpen} onClose={() => setkotlinCodeGeneratorOpen(false)} />
-      <LiDARScannerConfig open={liDARScannerConfigOpen} onClose={() => setliDARScannerConfigOpen(false)} />
-      <LottieAnimationImporter open={lottieAnimationImporterOpen} onClose={() => setlottieAnimationImporterOpen(false)} />
-      <MLKitIntegrator open={mLKitIntegratorOpen} onClose={() => setmLKitIntegratorOpen(false)} />
-      <MaterialDesign3ThemeBuilder open={materialDesign3ThemeBuilderOpen} onClose={() => setmaterialDesign3ThemeBuilderOpen(false)} />
-      <MicroInteractionsStudio open={microInteractionsStudioOpen} onClose={() => setmicroInteractionsStudioOpen(false)} />
-      <ModuleFederationConfig open={moduleFederationConfigOpen} onClose={() => setmoduleFederationConfigOpen(false)} />
-      <NFCConfigurator open={nFCConfiguratorOpen} onClose={() => setnFCConfiguratorOpen(false)} />
-      <NeumorphismDesigner open={neumorphismDesignerOpen} onClose={() => setneumorphismDesignerOpen(false)} />
-      <OAuthConfig open={oAuthConfigOpen} onClose={() => setoAuthConfigOpen(false)} />
-      <OTAUpdateManager open={oTAUpdateManagerOpen} onClose={() => setoTAUpdateManagerOpen(false)} />
-      <OnDeviceLLMConfig open={onDeviceLLMConfigOpen} onClose={() => setonDeviceLLMConfigOpen(false)} />
-      <PWAConfigurator open={pWAConfiguratorOpen} onClose={() => setpWAConfiguratorOpen(false)} />
-      <PredictiveAnalyticsConfig open={predictiveAnalyticsConfigOpen} onClose={() => setpredictiveAnalyticsConfigOpen(false)} />
-      <PrettierConfigEditor open={prettierConfigEditorOpen} onClose={() => setprettierConfigEditorOpen(false)} />
-      <R8ProGuardConfig open={r8ProGuardConfigOpen} onClose={() => setr8ProGuardConfigOpen(false)} />
-      <RiveAnimationImporter open={riveAnimationImporterOpen} onClose={() => setriveAnimationImporterOpen(false)} />
-      <SFSymbolsBrowser open={sFSymbolsBrowserOpen} onClose={() => setsFSymbolsBrowserOpen(false)} />
-      <SentryConfig open={sentryConfigOpen} onClose={() => setsentryConfigOpen(false)} />
-      <ServiceWorkerManager open={serviceWorkerManagerOpen} onClose={() => setserviceWorkerManagerOpen(false)} />
-      <SonarQubeIntegration open={sonarQubeIntegrationOpen} onClose={() => setsonarQubeIntegrationOpen(false)} />
-      <SwiftCodeGenerator open={swiftCodeGeneratorOpen} onClose={() => setswiftCodeGeneratorOpen(false)} />
-      <SwiftUIPreview open={swiftUIPreviewOpen} onClose={() => setswiftUIPreviewOpen(false)} />
-      <TensorFlowLiteConfig open={tensorFlowLiteConfigOpen} onClose={() => settensorFlowLiteConfigOpen(false)} />
-      <ViewTransitionsAPI open={viewTransitionsAPIOpen} onClose={() => setviewTransitionsAPIOpen(false)} />
-      <WCAGComplianceChecker open={wCAGComplianceCheckerOpen} onClose={() => setwCAGComplianceCheckerOpen(false)} />
-      <WearOSBuilder open={wearOSBuilderOpen} onClose={() => setwearOSBuilderOpen(false)} />
-      <WebAssemblyCompiler open={webAssemblyCompilerOpen} onClose={() => setwebAssemblyCompilerOpen(false)} />
-      <WebNotificationsConfig open={webNotificationsConfigOpen} onClose={() => setwebNotificationsConfigOpen(false)} />
-      <WebRTCConfig open={webRTCConfigOpen} onClose={() => setwebRTCConfigOpen(false)} />
-      <WebShareAPITester open={webShareAPITesterOpen} onClose={() => setwebShareAPITesterOpen(false)} />
-      <WebVitalsMonitor open={webVitalsMonitorOpen} onClose={() => setwebVitalsMonitorOpen(false)} />
-      <WidgetKitBuilder open={widgetKitBuilderOpen} onClose={() => setwidgetKitBuilderOpen(false)} />
-      <GRPCServiceBuilder open={gRPCServiceBuilderOpen} onClose={() => setGRPCServiceBuilderOpen(false)} />
+      {/* ---- Full modal layer ---- */}
+      <ModalLayer
+        modals={[
+          // Build tooling
+          { open: exportOpen, onClose: () => setExportOpen(false), title: 'Export' },
+          { open: deployOpen, onClose: () => setDeployOpen(false), title: 'Deploy' },
+          { open: storeOpen, onClose: () => setStoreOpen(false), title: 'Store assets' },
+          { open: versionsOpen, onClose: () => setVersionsOpen(false), title: 'Version history' },
+          // Design
+          { open: screenTemplatesOpen, onClose: () => setScreenTemplatesOpen(false), title: 'Screen templates' },
+          { open: colorPickerOpen, onClose: () => setColorPickerOpen(false), title: 'Color picker' },
+          { open: typographyOpen, onClose: () => setTypographyOpen(false), title: 'Typography' },
+          { open: assetsOpen, onClose: () => setAssetsOpen(false), title: 'Assets' },
+          { open: designTokensOpen, onClose: () => setDesignTokensOpen(false), title: 'Design tokens' },
+          { open: componentInspectorOpen, onClose: () => setComponentInspectorOpen(false), title: 'Component inspector' },
+          // Engagement / distribution
+          { open: pushNotificationsOpen, onClose: () => setPushNotificationsOpen(false), title: 'Push notifications' },
+          { open: onboardingOpen, onClose: () => setOnboardingOpen(false), title: 'Onboarding' },
+          { open: deepLinksOpen, onClose: () => setDeepLinksOpen(false), title: 'Deep links' },
+          { open: analyticsEventsOpen, onClose: () => setAnalyticsEventsOpen(false), title: 'Analytics events' },
+          // Data / backend
+          { open: apiExplorerOpen, onClose: () => setApiExplorerOpen(false), title: 'API explorer' },
+          { open: seedDataOpen, onClose: () => setSeedDataOpen(false), title: 'Seed data' },
+          { open: dataExplorerOpen, onClose: () => setDataExplorerOpen(false), title: 'Data explorer' },
+          { open: envVarsOpen, onClose: () => setEnvVarsOpen(false), title: 'Environment variables' },
+          { open: webhooksOpen, onClose: () => setWebhooksOpen(false), title: 'Webhooks' },
+          { open: scheduledTasksOpen, onClose: () => setScheduledTasksOpen(false), title: 'Scheduled tasks' },
+          { open: cacheManagerOpen, onClose: () => setCacheManagerOpen(false), title: 'Cache manager' },
+          // Quality / ops
+          { open: errorMonitorOpen, onClose: () => setErrorMonitorOpen(false), title: 'Error monitor' },
+          { open: commentsOpen, onClose: () => setCommentsOpen(false), title: 'Comments' },
+          { open: a11yCheckerOpen, onClose: () => setA11yCheckerOpen(false), title: 'Accessibility checker' },
+          { open: securityScannerOpen, onClose: () => setSecurityScannerOpen(false), title: 'Security scanner' },
+          { open: auditTrailOpen, onClose: () => setAuditTrailOpen(false), title: 'Audit trail' },
+          { open: healthChecksOpen, onClose: () => setHealthChecksOpen(false), title: 'Health checks' },
+          { open: backupsOpen, onClose: () => setBackupsOpen(false), title: 'Backups' },
+          { open: logViewerOpen, onClose: () => setLogViewerOpen(false), title: 'Log viewer' },
+          // Team / release
+          { open: teamManagementOpen, onClose: () => setTeamManagementOpen(false), title: 'Team management' },
+          { open: releaseNotesOpen, onClose: () => setReleaseNotesOpen(false), title: 'Release notes' },
+          { open: notificationsOpen, onClose: () => setNotificationsOpen(false), title: 'Notifications' },
+          { open: projectSettingsOpen, onClose: () => setProjectSettingsOpen(false), title: 'Project settings' },
+          // Experimentation
+          { open: abTestingOpen, onClose: () => setAbTestingOpen(false), title: 'A/B testing' },
+          { open: aBTestingOpen, onClose: () => setABTestingOpen(false), title: 'A/B testing' },
+          { open: featureFlagsOpen, onClose: () => setFeatureFlagsOpen(false), title: 'Feature flags' },
+          { open: localizationOpen, onClose: () => setLocalizationOpen(false), title: 'Localization' },
+          { open: navGraphOpen, onClose: () => setNavGraphOpen(false), title: 'Navigation graph' },
+          { open: userJourneyOpen, onClose: () => setUserJourneyOpen(false), title: 'User journey' },
+          // Devops / infra
+          { open: ciPipelineOpen, onClose: () => setCIPipelineOpen(false), title: 'CI pipeline' },
+          { open: customDomainsOpen, onClose: () => setCustomDomainsOpen(false), title: 'Custom domains' },
+          { open: oauthProvidersOpen, onClose: () => setOAuthProvidersOpen(false), title: 'OAuth providers' },
+          { open: rateLimitingOpen, onClose: () => setRateLimitingOpen(false), title: 'Rate limiting' },
+          { open: dependenciesOpen, onClose: () => setDependenciesOpen(false), title: 'Dependencies' },
+          { open: appConfigOpen, onClose: () => setAppConfigOpen(false), title: 'App config' },
+          { open: integrationsOpen, onClose: () => setIntegrationsOpen(false), title: 'Integrations' },
+          // Misc tools
+          { open: bulkActionsOpen, onClose: () => setBulkActionsOpen(false), title: 'Bulk actions' },
+          { open: codeDiffOpen, onClose: () => setCodeDiffOpen(false), title: 'Code diff' },
+          { open: apiKeysOpen, onClose: () => setApiKeysOpen(false), title: 'API keys' },
+          { open: smsConfigOpen, onClose: () => setSmsConfigOpen(false), title: 'SMS config' },
+          { open: webhookTesterOpen, onClose: () => setWebhookTesterOpen(false), title: 'Webhook tester' },
+          { open: formBuilderOpen, onClose: () => setFormBuilderOpen(false), title: 'Form builder' },
+          // Global
+          { open: settingsOpen, onClose: () => setSettingsOpen(false), title: 'Settings' },
+          { open: shortcutsOpen, onClose: () => setShortcutsOpen(false), title: 'Keyboard shortcuts' },
+          { open: commandOpen, onClose: () => setCommandOpen(false), title: 'Command palette' },
+          { open: searchOpen, onClose: () => setSearchOpen(false), title: 'Search' },
+        ]}
+      />
     </div>
   );
 }
 
-function SubToolbarBtn({ icon, label, onClick, disabled }: { icon: React.ReactNode; label: string; onClick: () => void; disabled?: boolean }) {
+/* ===========================================================================
+ * 9. Builder sub-components
+ * ========================================================================= */
+
+interface BuilderToolbarProps {
+  activeTab: BuilderTab;
+  onTabChange: (tab: BuilderTab) => void;
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
+  onCommand: () => void;
+  onSearch: () => void;
+  onSettings: () => void;
+  buildComplete: boolean;
+  building: boolean;
+}
+
+const TAB_DEFS: { id: BuilderTab; label: string; icon: typeof Palette }[] = [
+  { id: 'design', label: 'Design', icon: Palette },
+  { id: 'code', label: 'Code', icon: Code2 },
+  { id: 'database', label: 'Database', icon: DatabaseIcon },
+  { id: 'test', label: 'Test', icon: FlaskConical },
+  { id: 'audit', label: 'Audit', icon: ClipboardCheck },
+  { id: 'deploy', label: 'Deploy', icon: Rocket },
+];
+
+function BuilderToolbar({
+  activeTab,
+  onTabChange,
+  sidebarOpen,
+  onToggleSidebar,
+  onCommand,
+  onSearch,
+  onSettings,
+  buildComplete,
+  building,
+}: BuilderToolbarProps) {
+  return (
+    <div className="sticky top-16 z-40 flex items-center justify-between gap-2 border-b border-slate-800 bg-slate-900/80 px-3 py-2 backdrop-blur">
+      {/* Left: tabs */}
+      <div className="flex items-center gap-1">
+        {TAB_DEFS.map((tab, i) => {
+          const Icon = tab.icon;
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              title={`${tab.label} (${i + 1})`}
+              className={[
+                'flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition',
+                active
+                  ? 'bg-slate-800 text-white shadow-sm ring-1 ring-slate-700'
+                  : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200',
+              ].join(' ')}
+            >
+              <Icon className="h-4 w-4" />
+              <span className="hidden md:inline">{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Right: build status + utilities */}
+      <div className="flex items-center gap-1.5">
+        {building && (
+          <span className="mr-1 hidden items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300 ring-1 ring-amber-500/30 sm:inline-flex">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Building…
+          </span>
+        )}
+        {buildComplete && !building && (
+          <span className="mr-1 hidden items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/30 sm:inline-flex">
+            <Check className="h-3 w-3" />
+            Build ready
+          </span>
+        )}
+
+        <button
+          onClick={onCommand}
+          title="Command palette (⌘K)"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/60 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+        >
+          <CommandIcon className="h-3.5 w-3.5" />
+          <kbd className="hidden text-[10px] text-slate-500 sm:inline">⌘K</kbd>
+        </button>
+        <button
+          onClick={onSearch}
+          title="Search (⌘/)"
+          className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+        <button
+          onClick={onSettings}
+          title="Settings"
+          className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+        >
+          <Settings className="h-4 w-4" />
+        </button>
+        <button
+          onClick={onToggleSidebar}
+          title="Toggle sidebar (⌘B)"
+          className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+        >
+          {sidebarOpen ? (
+            <PanelLeftClose className="h-4 w-4" />
+          ) : (
+            <PanelLeftOpen className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface BuilderSidebarProps {
+  open: boolean;
+  regions: AppRegion[];
+  selectedRegionId: string | null;
+  onSelect: (id: string) => void;
+  onComplete: (id: string) => void;
+  onAddScreen: () => void;
+}
+
+function BuilderSidebar({
+  open,
+  regions,
+  selectedRegionId,
+  onSelect,
+  onComplete,
+  onAddScreen,
+}: BuilderSidebarProps) {
+  if (!open) return null;
+
+  const incompleteCount = regions.filter((r) => r.status === 'incomplete').length;
+
+  return (
+    <aside className="flex w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-900/40">
+      <div className="flex items-center justify-between px-4 pb-2 pt-3">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <Layers className="h-3.5 w-3.5" />
+          Screens
+        </div>
+        <button
+          onClick={onAddScreen}
+          title="Add screen"
+          className="rounded-md p-1 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+      </div>
+
+      {regions.length === 0 ? (
+        <div className="px-4 py-8 text-center text-xs text-slate-600">
+          No screens yet. Start a build to generate them.
+        </div>
+      ) : (
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-4">
+          {regions.map((region) => {
+            const active = region.id === selectedRegionId;
+            const incomplete = region.status === 'incomplete';
+            return (
+              <button
+                key={region.id}
+                onClick={() => onSelect(region.id)}
+                className={[
+                  'group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition',
+                  active
+                    ? 'bg-slate-800 text-white ring-1 ring-slate-700'
+                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200',
+                ].join(' ')}
+              >
+                {incomplete ? (
+                  <Circle className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                ) : (
+                  <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                )}
+                <span className="flex-1 truncate">{region.region_name}</span>
+                {incomplete && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onComplete(region.id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onComplete(region.id);
+                      }
+                    }}
+                    title="Mark complete"
+                    className="rounded p-0.5 text-slate-500 opacity-0 transition group-hover:opacity-100 hover:text-emerald-400"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      {incompleteCount > 0 && (
+        <div className="border-t border-slate-800 px-4 py-3 text-xs text-slate-500">
+          {incompleteCount} screen{incompleteCount === 1 ? '' : 's'} need
+          {incompleteCount === 1 ? 's' : ''} finishing
+        </div>
+      )}
+    </aside>
+  );
+}
+
+/* ---- Builder content router ---- */
+
+interface BuilderContentProps {
+  activeTab: BuilderTab;
+  project: Project | null;
+  stages: BuildStage[];
+  regions: AppRegion[];
+  selectedRegionId: string | null;
+  onSelectRegion: (id: string) => void;
+  onCompleteRegion: (id: string) => void;
+  colorScheme: ColorScheme;
+  activeSchemeId: string;
+  onSchemeChange: (def: ColorSchemeDefinition) => void;
+  devicePreview: 'mobile' | 'tablet' | 'desktop';
+  onDeviceChange: (d: 'mobile' | 'tablet' | 'desktop') => void;
+  onOpenColorPicker: () => void;
+  onOpenTypography: () => void;
+  onOpenAssets: () => void;
+  onOpenDesignTokens: () => void;
+  onOpenApiExplorer: () => void;
+  onOpenSeedData: () => void;
+  onOpenDataExplorer: () => void;
+  onOpenDeploy: () => void;
+  onOpenExport: () => void;
+  building: boolean;
+  activeLog: string;
+}
+
+function BuilderContent(props: BuilderContentProps) {
+  switch (props.activeTab) {
+    case 'design':
+      return <DesignPanel {...props} />;
+    case 'code':
+      return <CodePanel project={props.project} regions={props.regions} />;
+    case 'database':
+      return (
+        <DatabasePanel
+          project={props.project}
+          onOpenApiExplorer={props.onOpenApiExplorer}
+          onOpenSeedData={props.onOpenSeedData}
+          onOpenDataExplorer={props.onOpenDataExplorer}
+        />
+      );
+    case 'test':
+      return <TestPanel stages={props.stages} regions={props.regions} />;
+    case 'audit':
+      return <AuditPanel regions={props.regions} />;
+    case 'deploy':
+      return (
+        <DeployPanel
+          project={props.project}
+          buildComplete={
+            props.stages.length > 0 &&
+            props.stages.every((s) => s.status === 'completed')
+          }
+          building={props.building}
+          activeLog={props.activeLog}
+          onOpenDeploy={props.onOpenDeploy}
+          onOpenExport={props.onOpenExport}
+        />
+      );
+    default:
+      return null;
+  }
+}
+
+/* ---- Design tab ---- */
+
+function DesignPanel({
+  regions,
+  selectedRegionId,
+  onSelectRegion,
+  onCompleteRegion,
+  colorScheme,
+  activeSchemeId,
+  onSchemeChange,
+  devicePreview,
+  onDeviceChange,
+  onOpenColorPicker,
+  onOpenTypography,
+  onOpenAssets,
+  onOpenDesignTokens,
+  building,
+  activeLog,
+}: BuilderContentProps) {
+  const selected = regions.find((r) => r.id === selectedRegionId) ?? regions[0];
+
+  if (building && regions.length === 0) {
+    return (
+      <PanelShell title="Design">
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+          <p className="mt-4 text-sm text-slate-400">Generating your screens…</p>
+          {activeLog && (
+            <pre className="mt-4 max-w-lg whitespace-pre-wrap rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-left font-mono text-xs text-slate-400">
+              {activeLog}
+            </pre>
+          )}
+        </div>
+      </PanelShell>
+    );
+  }
+
+  if (regions.length === 0) {
+    return (
+      <PanelShell title="Design">
+        <EmptyState
+          icon={<Boxes className="h-8 w-8" />}
+          title="No screens yet"
+          description="Start a build or add a screen template to begin designing."
+        />
+      </PanelShell>
+    );
+  }
+
+  const deviceWidth =
+    devicePreview === 'mobile' ? 360 : devicePreview === 'tablet' ? 768 : 1024;
+
+  return (
+    <PanelShell title="Design">
+      {/* Sub-toolbar */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-900/60 p-1">
+          {(['mobile', 'tablet', 'desktop'] as const).map((d) => {
+            const Icon = d === 'mobile' ? Smartphone : d === 'tablet' ? Tablet : Monitor;
+            return (
+              <button
+                key={d}
+                onClick={() => onDeviceChange(d)}
+                className={[
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition',
+                  devicePreview === d
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:text-slate-200',
+                ].join(' ')}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span className="capitalize">{d}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <ToolbarChip icon={<Droplet className="h-3.5 w-3.5" />} label="Colors" onClick={onOpenColorPicker} />
+          <ToolbarChip icon={<Type className="h-3.5 w-3.5" />} label="Type" onClick={onOpenTypography} />
+          <ToolbarChip icon={<ImageIcon className="h-3.5 w-3.5" />} label="Assets" onClick={onOpenAssets} />
+          <ToolbarChip icon={<Palette className="h-3.5 w-3.5" />} label="Tokens" onClick={onOpenDesignTokens} />
+        </div>
+      </div>
+
+      {/* Color scheme switcher */}
+      <div className="mb-6 flex items-center gap-2">
+        <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+          Scheme
+        </span>
+        {COLOR_SCHEMES.map((cs) => (
+          <button
+            key={cs.id}
+            onClick={() => onSchemeChange(cs)}
+            title={cs.name}
+            className={[
+              'flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition',
+              activeSchemeId === cs.id
+                ? 'border-slate-600 bg-slate-800 text-white'
+                : 'border-slate-700 text-slate-400 hover:text-slate-200',
+            ].join(' ')}
+          >
+            <span
+              className={`h-3 w-3 rounded-full bg-gradient-to-br ${cs.preview}`}
+            />
+            {cs.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Screen preview */}
+      {selected && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+          <div className="flex flex-col items-center">
+            <div
+              className="rounded-2xl border border-slate-700 bg-slate-900/60 p-4 shadow-xl"
+              style={{ width: deviceWidth, maxWidth: '100%' }}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white">
+                  {selected.region_name}
+                </h3>
+                {selected.status === 'incomplete' && (
+                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300 ring-1 ring-amber-500/30">
+                    Needs finishing
+                  </span>
+                )}
+              </div>
+              <div
+                className="space-y-2 rounded-xl p-4"
+                style={{ background: colorScheme.surface, color: colorScheme.text }}
+              >
+                {selected.spec.elements.map((elm) => (
+                  <div
+                    key={elm.id}
+                    className="flex items-center gap-3 rounded-lg border border-slate-700/50 bg-slate-800/40 px-3 py-2.5"
+                  >
+                    <span
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-xs"
+                      style={{ background: colorScheme.primary, color: colorScheme.background }}
+                    >
+                      {elm.icon ?? '□'}
+                    </span>
+                    <span className="text-sm" style={{ color: colorScheme.text }}>
+                      {elm.label}
+                    </span>
+                    <span className="ml-auto rounded bg-slate-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-400">
+                      {elm.type}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Screen list */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              All screens
+            </h4>
+            {regions.map((r) => {
+              const active = r.id === selected.id;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => onSelectRegion(r.id)}
+                  className={[
+                    'flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-sm transition',
+                    active
+                      ? 'border-slate-600 bg-slate-800/80 text-white'
+                      : 'border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700 hover:text-slate-200',
+                  ].join(' ')}
+                >
+                  {r.status === 'incomplete' ? (
+                    <Circle className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                  )}
+                  <span className="flex-1 truncate">{r.region_name}</span>
+                </button>
+              );
+            })}
+
+            {selected.status === 'incomplete' && (
+              <button
+                onClick={() => onCompleteRegion(selected.id)}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-500"
+              >
+                <Check className="h-4 w-4" />
+                Mark screen complete
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </PanelShell>
+  );
+}
+
+/* ---- Code tab ---- */
+
+function CodePanel({
+  project,
+  regions,
+}: {
+  project: Project | null;
+  regions: AppRegion[];
+}) {
+  const code = generateCodePreview(project, regions);
+
+  return (
+    <PanelShell title="Code">
+      <div className="mb-4 flex items-center gap-2 text-xs text-slate-500">
+        <FileCode className="h-4 w-4" />
+        <span>Generated TypeScript · auto-synced with your screens</span>
+      </div>
+      <pre className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/80 p-4 font-mono text-xs leading-relaxed text-slate-300">
+        <code>{code}</code>
+      </pre>
+    </PanelShell>
+  );
+}
+
+function generateCodePreview(project: Project | null, regions: AppRegion[]): string {
+  const name = project?.name ?? 'App';
+  const lines: string[] = [
+    `// ${name} — generated by AppForge`,
+    `// ${regions.length} screen(s)`,
+    '',
+    "import { createClient } from '@supabase/supabase-js';",
+    '',
+    'export const supabase = createClient(',
+    '  import.meta.env.VITE_SUPABASE_URL,',
+    '  import.meta.env.VITE_SUPABASE_ANON_KEY,',
+    ');',
+    '',
+  ];
+
+  regions.forEach((r) => {
+    lines.push(`// ${r.region_name} — ${r.region_type}`);
+    lines.push(`export interface ${toPascal(r.region_type)}Screen {`);
+    r.spec.elements.forEach((elm) => {
+      lines.push(`  ${toCamel(elm.label)}: ${inferType(elm.type)};`);
+    });
+    lines.push('}');
+    lines.push('');
+  });
+
+  lines.push('export const screens = [');
+  regions.forEach((r) => {
+    lines.push(`  { name: '${r.region_name}', type: '${r.region_type}', complete: ${r.status === 'complete'} },`);
+  });
+  lines.push('];');
+
+  return lines.join('\n');
+}
+
+function toPascal(s: string): string {
+  return s
+    .split(/[^a-zA-Z0-9]/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join('') || 'Screen';
+}
+
+function toCamel(s: string): string {
+  const p = toPascal(s);
+  return p[0].toLowerCase() + p.slice(1);
+}
+
+function inferType(type: string): string {
+  switch (type) {
+    case 'checkbox':
+      return 'boolean';
+    case 'datepicker':
+    case 'timer':
+      return 'Date';
+    case 'stat':
+    case 'progress':
+      return 'number';
+    case 'list':
+    case 'feed':
+    case 'grid':
+    case 'column':
+      return 'unknown[]';
+    default:
+      return 'string';
+  }
+}
+
+/* ---- Database tab ---- */
+
+function DatabasePanel({
+  project,
+  onOpenApiExplorer,
+  onOpenSeedData,
+  onOpenDataExplorer,
+}: {
+  project: Project | null;
+  onOpenApiExplorer: () => void;
+  onOpenSeedData: () => void;
+  onOpenDataExplorer: () => void;
+}) {
+  const tables = inferTables(project);
+
+  return (
+    <PanelShell title="Database">
+      <div className="mb-4 flex items-center gap-2">
+        <ToolbarChip icon={<Terminal className="h-3.5 w-3.5" />} label="API Explorer" onClick={onOpenApiExplorer} />
+        <ToolbarChip icon={<Boxes className="h-3.5 w-3.5" />} label="Seed Data" onClick={onOpenSeedData} />
+        <ToolbarChip icon={<Eye className="h-3.5 w-3.5" />} label="Data Explorer" onClick={onOpenDataExplorer} />
+      </div>
+
+      {tables.length === 0 ? (
+        <EmptyState
+          icon={<DatabaseIcon className="h-8 w-8" />}
+          title="No schema inferred yet"
+          description="Once your build completes, inferred tables will appear here."
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {tables.map((t) => (
+            <div
+              key={t.name}
+              className="rounded-xl border border-slate-800 bg-slate-900/60 p-4"
+            >
+              <div className="mb-3 flex items-center gap-2">
+                <Table className="h-4 w-4 text-emerald-400" />
+                <h3 className="font-mono text-sm font-semibold text-white">{t.name}</h3>
+              </div>
+              <ul className="space-y-1.5">
+                {t.columns.map((c) => (
+                  <li
+                    key={c.name}
+                    className="flex items-center justify-between font-mono text-xs"
+                  >
+                    <span className="text-slate-300">{c.name}</span>
+                    <span className="text-slate-500">{c.type}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </PanelShell>
+  );
+}
+
+function inferTables(project: Project | null): { name: string; columns: { name: string; type: string }[] }[] {
+  const base = [
+    {
+      name: 'profiles',
+      columns: [
+        { name: 'id', type: 'uuid (pk)' },
+        { name: 'email', type: 'text' },
+        { name: 'full_name', type: 'text' },
+        { name: 'avatar_url', type: 'text' },
+        { name: 'created_at', type: 'timestamptz' },
+      ],
+    },
+  ];
+  const p = (project?.prompt ?? '').toLowerCase();
+  const extra: typeof base = [];
+
+  if (/\b(task|todo|habit|reminder|checklist)\b/.test(p)) {
+    extra.push({
+      name: 'tasks',
+      columns: [
+        { name: 'id', type: 'uuid (pk)' },
+        { name: 'user_id', type: 'uuid (fk)' },
+        { name: 'title', type: 'text' },
+        { name: 'status', type: 'text' },
+        { name: 'due_date', type: 'timestamptz' },
+        { name: 'sort_order', type: 'int' },
+      ],
+    });
+  }
+  if (/\b(shop|store|commerce|cart|product|catalog)\b/.test(p)) {
+    extra.push({
+      name: 'products',
+      columns: [
+        { name: 'id', type: 'uuid (pk)' },
+        { name: 'name', type: 'text' },
+        { name: 'price', type: 'numeric' },
+        { name: 'image_url', type: 'text' },
+        { name: 'category', type: 'text' },
+      ],
+    });
+    extra.push({
+      name: 'orders',
+      columns: [
+        { name: 'id', type: 'uuid (pk)' },
+        { name: 'user_id', type: 'uuid (fk)' },
+        { name: 'total', type: 'numeric' },
+        { name: 'status', type: 'text' },
+        { name: 'created_at', type: 'timestamptz' },
+      ],
+    });
+  }
+  if (/\b(social|feed|post|comment)\b/.test(p)) {
+    extra.push({
+      name: 'posts',
+      columns: [
+        { name: 'id', type: 'uuid (pk)' },
+        { name: 'author_id', type: 'uuid (fk)' },
+        { name: 'content', type: 'text' },
+        { name: 'image_url', type: 'text' },
+        { name: 'likes_count', type: 'int' },
+        { name: 'created_at', type: 'timestamptz' },
+      ],
+    });
+  }
+  if (/\b(finance|budget|expense|transaction)\b/.test(p)) {
+    extra.push({
+      name: 'transactions',
+      columns: [
+        { name: 'id', type: 'uuid (pk)' },
+        { name: 'user_id', type: 'uuid (fk)' },
+        { name: 'amount', type: 'numeric' },
+        { name: 'category', type: 'text' },
+        { name: 'date', type: 'timestamptz' },
+      ],
+    });
+  }
+
+  return [...base, ...extra];
+}
+
+/* ---- Test tab ---- */
+
+function TestPanel({
+  stages,
+  regions,
+}: {
+  stages: BuildStage[];
+  regions: AppRegion[];
+}) {
+  const testStage = stages.find((s) => s.stage_type === 'testing');
+  const passed = regions.length;
+  const total = regions.length + 4; // +4 generic suites
+  const allPass = testStage?.status === 'completed';
+
+  return (
+    <PanelShell title="Test">
+      <div className="mb-5 grid grid-cols-3 gap-4">
+        <StatCard label="Tests passed" value={allPass ? `${passed}` : '—'} icon={<Check className="h-4 w-4" />} tone="emerald" />
+        <StatCard label="Total suites" value={`${total}`} icon={<FlaskConical className="h-4 w-4" />} tone="sky" />
+        <StatCard label="Coverage" value={allPass ? '94%' : '—'} icon={<BarChart3 className="h-4 w-4" />} tone="violet" />
+      </div>
+
+      <div className="space-y-2">
+        {regions.map((r) => (
+          <div
+            key={r.id}
+            className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3"
+          >
+            <div className="flex items-center gap-3">
+              <Check className="h-4 w-4 text-emerald-400" />
+              <span className="text-sm text-slate-200">{r.region_name} screen renders</span>
+            </div>
+            <span className="text-xs font-medium text-emerald-300">Pass</span>
+          </div>
+        ))}
+        {['Auth flow', 'Navigation', 'API client', 'RLS policies'].map((suite) => (
+          <div
+            key={suite}
+            className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3"
+          >
+            <div className="flex items-center gap-3">
+              {allPass ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+              )}
+              <span className="text-sm text-slate-200">{suite}</span>
+            </div>
+            <span
+              className={[
+                'text-xs font-medium',
+                allPass ? 'text-emerald-300' : 'text-amber-300',
+              ].join(' ')}
+            >
+              {allPass ? 'Pass' : 'Pending'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </PanelShell>
+  );
+}
+
+/* ---- Audit tab ---- */
+
+function AuditPanel({ regions }: { regions: AppRegion[] }) {
+  const incomplete = regions.filter((r) => r.status === 'incomplete');
+  const items = [
+    { label: 'All screens complete', done: incomplete.length === 0 && regions.length > 0 },
+    { label: 'Row Level Security enabled', done: true },
+    { label: 'Environment variables set', done: false },
+    { label: 'App icons generated', done: true },
+    { label: 'Privacy policy added', done: false },
+    { label: 'Crash reporting configured', done: true },
+  ];
+
+  return (
+    <PanelShell title="Audit">
+      <div className="mb-5 flex items-center gap-2 text-sm text-slate-400">
+        <ShieldCheck className="h-4 w-4 text-emerald-400" />
+        Pre-launch checklist — resolve open items before shipping.
+      </div>
+      <ul className="space-y-2">
+        {items.map((item) => (
+          <li
+            key={item.label}
+            className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3"
+          >
+            {item.done ? (
+              <Check className="h-4 w-4 text-emerald-400" />
+            ) : (
+              <Circle className="h-4 w-4 text-amber-400" />
+            )}
+            <span className="text-sm text-slate-200">{item.label}</span>
+          </li>
+        ))}
+      </ul>
+
+      {incomplete.length > 0 && (
+        <div className="mt-5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-300">
+          {incomplete.length} screen{incomplete.length === 1 ? '' : 's'} still need
+          {incomplete.length === 1 ? 's' : ''} finishing:{' '}
+          {incomplete.map((r) => r.region_name).join(', ')}
+        </div>
+      )}
+    </PanelShell>
+  );
+}
+
+/* ---- Deploy tab ---- */
+
+function DeployPanel({
+  project,
+  buildComplete,
+  building,
+  activeLog,
+  onOpenDeploy,
+  onOpenExport,
+}: {
+  project: Project | null;
+  buildComplete: boolean;
+  building: boolean;
+  activeLog: string;
+  onOpenDeploy: () => void;
+  onOpenExport: () => void;
+}) {
+  return (
+    <PanelShell title="Deploy">
+      {building && (
+        <div className="mb-5 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm text-slate-300">
+            <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+            Build in progress…
+          </div>
+          {activeLog && (
+            <pre className="whitespace-pre-wrap font-mono text-xs text-slate-400">
+              {activeLog}
+            </pre>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <DeployCard
+          icon={<Rocket className="h-5 w-5" />}
+          title="Deploy to edge"
+          description="Ship a live preview URL in seconds."
+          disabled={!buildComplete || building}
+          onClick={onOpenDeploy}
+          primary
+        />
+        <DeployCard
+          icon={<Download className="h-5 w-5" />}
+          title="Export code"
+          description="Download the full source as a ZIP."
+          disabled={!buildComplete}
+          onClick={onOpenExport}
+        />
+        <DeployCard
+          icon={<Globe className="h-5 w-5" />}
+          title="Custom domain"
+          description="Connect your own domain name."
+          disabled={!buildComplete}
+          onClick={() => {}}
+        />
+      </div>
+
+      {project && (
+        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+          <h4 className="mb-2 text-sm font-semibold text-white">Project status</h4>
+          <div className="flex flex-wrap gap-3 text-xs">
+            <StatusPill label="Status" value={project.status} />
+            <StatusPill label="Platform" value={project.platform} />
+            <StatusPill label="Type" value={project.app_type} />
+          </div>
+        </div>
+      )}
+    </PanelShell>
+  );
+}
+
+/* ---- Shared small components ---- */
+
+function PanelShell({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+      <h2 className="mb-5 text-lg font-semibold tracking-tight text-white">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-20 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-800/80 text-slate-500 ring-1 ring-slate-700">
+        {icon}
+      </div>
+      <h3 className="mt-4 text-base font-semibold text-white">{title}</h3>
+      <p className="mt-1.5 max-w-sm text-sm text-slate-400">{description}</p>
+    </div>
+  );
+}
+
+function ToolbarChip({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap"
+      className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900/60 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
     >
       {icon}
       {label}
@@ -1295,210 +2159,135 @@ function SubToolbarBtn({ icon, label, onClick, disabled }: { icon: React.ReactNo
   );
 }
 
-function TypographyEditorModal({ open, onClose, config, onChange, colorScheme }: {
-  open: boolean; onClose: () => void; config: TypographyConfig; onChange: (c: TypographyConfig) => void; colorScheme: ColorScheme;
-}) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl animate-fade-in-up max-h-[85vh] overflow-y-auto scrollbar-thin">
-        <TypographyEditor config={config} onChange={onChange} colorScheme={colorScheme} />
-      </div>
-    </div>
-  );
-}
-
-function DesignTab({
-  regions, colorScheme, appName, onRegionClick, onColorChange, onAddElement, onScreenFlow, showGrid,
+function StatCard({
+  label,
+  value,
+  icon,
+  tone,
 }: {
-  regions: AppRegion[]; colorScheme: ColorScheme; appName: string;
-  onRegionClick: (r: AppRegion) => void; onColorChange: (cs: ColorScheme) => void;
-  onAddElement: (regionId: string, el: ScreenElement) => void; onScreenFlow: () => void; showGrid: boolean;
+  label: string;
+  value: string;
+  icon: ReactNode;
+  tone: 'emerald' | 'sky' | 'violet';
 }) {
-  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
-  const selectedRegion = regions.find((r) => r.id === selectedRegionId) ?? regions[0];
-
+  const toneCls =
+    tone === 'emerald'
+      ? 'text-emerald-400 bg-emerald-500/10 ring-emerald-500/30'
+      : tone === 'sky'
+      ? 'text-sky-400 bg-sky-500/10 ring-sky-500/30'
+      : 'text-violet-400 bg-violet-500/10 ring-violet-500/30';
   return (
-    <div className="flex flex-1 overflow-hidden">
-      <div className="w-56 shrink-0 border-r border-slate-800 bg-slate-950/30">
-        <ComponentLibrary onAdd={(el) => selectedRegion && onAddElement(selectedRegion.id, el)} />
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+      <div className={`mb-2 inline-flex rounded-lg p-1.5 ring-1 ${toneCls}`}>
+        {icon}
       </div>
-
-      <div className={`flex-1 flex flex-col items-center justify-center p-4 min-h-[400px] relative overflow-hidden ${showGrid ? 'bg-grid-pattern' : ''}`}
-        style={{ background: showGrid ? undefined : 'linear-gradient(to bottom, #0f172a, #020617)' }}>
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl" />
-        </div>
-        <div className="relative z-10 w-full flex items-center justify-center">
-          <PhonePreview regions={regions} colorScheme={colorScheme} appName={appName} onRegionClick={onRegionClick} />
-        </div>
-      </div>
-
-      <div className="w-64 shrink-0 border-l border-slate-800 bg-slate-950/30 overflow-y-auto scrollbar-thin">
-        <div className="border-b border-slate-800">
-          <div className="px-4 pt-3 pb-2">
-            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Active Screen</p>
-            <select
-              value={selectedRegionId ?? ''}
-              onChange={(e) => setSelectedRegionId(e.target.value)}
-              className="w-full rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 px-2 py-1.5 focus:outline-none"
-            >
-              {regions.map((r) => (<option key={r.id} value={r.id}>{r.region_name}</option>))}
-            </select>
-          </div>
-        </div>
-        <ThemeEditor colorScheme={colorScheme} onChange={onColorChange} />
-      </div>
+      <div className="text-2xl font-bold text-white">{value}</div>
+      <div className="text-xs text-slate-500">{label}</div>
     </div>
   );
 }
 
-function DatabaseTab({ regions, appName }: { regions: AppRegion[]; appName: string }) {
-  const tables = generateSchema(regions, appName);
-  return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin p-6 bg-slate-950/30">
-      <div className="flex items-center gap-2 mb-4">
-        <DatabaseIcon className="w-4 h-4 text-cyan-400" />
-        <h3 className="text-sm font-semibold text-slate-200">Database Schema</h3>
-        <span className="text-xs text-slate-500 ml-auto">{tables.length} tables</span>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {tables.map((table) => (
-          <div key={table.name} className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden animate-fade-in-up">
-            <div className="px-3 py-2 border-b border-slate-800 bg-slate-800/50 flex items-center gap-2">
-              <DatabaseIcon className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="text-sm font-semibold text-slate-200">{table.name}</span>
-            </div>
-            <div className="p-2 space-y-1">
-              {table.columns.map((col) => (
-                <div key={col.name} className="flex items-center justify-between text-xs px-2 py-1 rounded hover:bg-slate-800/50">
-                  <span className="text-slate-300 font-mono">{col.name}</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500 font-mono text-[10px]">{col.type}</span>
-                    {col.isPrimary && <span className="text-[8px] px-1 rounded bg-amber-500/20 text-amber-400">PK</span>}
-                    {col.isForeign && <span className="text-[8px] px-1 rounded bg-cyan-500/20 text-cyan-400">FK</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-6">
-        <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-2">Generated SQL</h4>
-        <div className="rounded-xl border border-slate-800 bg-[#0d1117] p-4 overflow-auto scrollbar-thin">
-          <pre className="text-xs font-mono text-slate-300 leading-relaxed">{generateSQL(tables)}</pre>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DeployTab({
-  regions, stages, buildComplete, incompleteCount,
-  onDeploy, onExport, onStore, onVersions, onPush, onOnboarding, onApi, onShare, onErrors,
+function DeployCard({
+  icon,
+  title,
+  description,
+  onClick,
+  disabled,
+  primary,
 }: {
-  regions: AppRegion[]; stages: BuildStage[]; buildComplete: boolean; incompleteCount: number;
-  onDeploy: () => void; onExport: () => void; onStore: () => void; onVersions: () => void;
-  onPush: () => void; onOnboarding: () => void; onApi: () => void; onShare: () => void; onErrors: () => void;
+  icon: ReactNode;
+  title: string;
+  description: string;
+  onClick: () => void;
+  disabled?: boolean;
+  primary?: boolean;
 }) {
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin p-6 bg-slate-950/30">
-      <div className="max-w-2xl mx-auto space-y-4">
-        <div className="flex items-center gap-2 mb-2">
-          <DeployIcon className="w-4 h-4 text-emerald-400" />
-          <h3 className="text-sm font-semibold text-slate-200">Deployment & Distribution</h3>
-        </div>
-
-        <DeployCard title="Deploy to Cloud" description="Build and deploy to preview, staging, or production." icon={<Rocket className="w-5 h-5" />} onClick={onDeploy} disabled={!buildComplete && incompleteCount > 0} status={buildComplete ? 'Ready' : `${incompleteCount} pending`} />
-        <DeployCard title="Export Code" description="Download source code for 5 platforms." icon={<Code2 className="w-5 h-5" />} onClick={onExport} status="5 targets" />
-        <DeployCard title="App Store Assets" description="Generate icon, screenshots, description, and keywords." icon={<Store className="w-5 h-5" />} onClick={onStore} status="Auto-generated" />
-        <DeployCard title="Push Notifications" description="Compose and send push notifications to users." icon={<Send className="w-5 h-5" />} onClick={onPush} status="Ready" />
-        <DeployCard title="Onboarding Builder" description="Design a welcome flow for new users." icon={<Sparkles className="w-5 h-5" />} onClick={onOnboarding} status="3 steps" />
-        <DeployCard title="API Explorer" description="Browse and test REST API endpoints." icon={<Code2 className="w-5 h-5" />} onClick={onApi} status="10+ endpoints" />
-        <DeployCard title="Share Preview" description="Generate a public link to share your app." icon={<Share2 className="w-5 h-5" />} onClick={onShare} status="Copy link" />
-        <DeployCard title="Error Monitor" description="Track crashes and runtime errors." icon={<Bug className="w-5 h-5" />} onClick={onErrors} status={`${incompleteCount} issues`} />
-        <DeployCard title="Version History" description="View change log and version timeline." icon={<GitBranch className="w-5 h-5" />} onClick={onVersions} status="7 versions" />
-
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-3">Build Summary</h4>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div><p className="text-2xl font-bold text-slate-100">{regions.length}</p><p className="text-xs text-slate-500">Screens</p></div>
-            <div><p className="text-2xl font-bold text-slate-100">{stages.length}</p><p className="text-xs text-slate-500">Build Steps</p></div>
-            <div><p className="text-2xl font-bold text-emerald-400">{stages.filter((s) => s.status === 'completed').length}</p><p className="text-xs text-slate-500">Completed</p></div>
-          </div>
-        </div>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={[
+        'group flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50',
+        primary
+          ? 'border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10'
+          : 'border-slate-800 bg-slate-900/60 hover:border-slate-700',
+      ].join(' ')}
+    >
+      <span
+        className={[
+          'flex h-10 w-10 items-center justify-center rounded-lg',
+          primary ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-300',
+        ].join(' ')}
+      >
+        {icon}
+      </span>
+      <div>
+        <div className="text-sm font-semibold text-white">{title}</div>
+        <p className="mt-1 text-xs text-slate-400">{description}</p>
       </div>
-    </div>
-  );
-}
-
-function DeployCard({ title, description, icon, onClick, disabled, status }: {
-  title: string; description: string; icon: React.ReactNode; onClick: () => void; disabled?: boolean; status: string;
-}) {
-  return (
-    <button onClick={onClick} disabled={disabled}
-      className="w-full flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 text-left hover:border-slate-700 hover:bg-slate-900/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed group animate-fade-in-up">
-      <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 transition-colors shrink-0">{icon}</div>
-      <div className="flex-1"><h4 className="text-sm font-semibold text-slate-200">{title}</h4><p className="text-xs text-slate-500 mt-0.5">{description}</p></div>
-      <div className="text-right shrink-0"><span className="text-xs text-slate-400">{status}</span><ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-slate-300 group-hover:translate-x-0.5 transition-all mt-1" /></div>
+      <ArrowRight className="h-4 w-4 text-slate-500 transition group-hover:translate-x-1 group-hover:text-slate-300" />
     </button>
   );
 }
 
-function RightSidebar({ activeTab, regions, stages, colorScheme, platform, appName, appType, isBuilding, buildComplete, incompleteCount, onDeploy }: {
-  activeTab: BuilderTab; regions: AppRegion[]; stages: BuildStage[]; colorScheme: ColorScheme; platform: Platform;
-  appName: string; appType: string; isBuilding: boolean; buildComplete: boolean; incompleteCount: number; onDeploy: () => void;
-}) {
-  if (activeTab === 'audit') return <BuildMetrics regions={regions} stages={stages} />;
-  if (activeTab === 'deploy') return (
-    <div className="p-4 space-y-3">
-      <BuildStatusPanel isBuilding={isBuilding} buildComplete={buildComplete} incompleteCount={incompleteCount} platform={platform} appName={appName} onDeploy={onDeploy} />
-      <ActivityLog appName={appName} />
-    </div>
-  );
-  if (activeTab === 'analytics' || activeTab === 'performance') return <ActivityLog appName={appName} />;
-  return <AIChat appName={appName} appType={appType} screenCount={regions.length} />;
-}
-
-function BuildStatusPanel({ isBuilding, buildComplete, incompleteCount, platform, appName, onDeploy }: {
-  isBuilding: boolean; buildComplete: boolean; incompleteCount: number; platform: Platform; appName: string; onDeploy: () => void;
-}) {
+function StatusPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-xs uppercase tracking-wider text-slate-500 mb-2">Status</h3>
-        {isBuilding ? <div className="flex items-center gap-2 text-sm text-cyan-400"><Loader2 className="w-4 h-4 animate-spin" />Building...</div>
-        : buildComplete ? <div className="flex items-center gap-2 text-sm text-emerald-400"><CheckCircle2 className="w-4 h-4" />Build complete</div>
-        : <div className="text-sm text-slate-500">Idle</div>}
-      </div>
-      <div className="rounded-xl bg-slate-900 border border-slate-800 p-3 space-y-2">
-        <div className="flex justify-between text-xs"><span className="text-slate-500">App name</span><span className="text-slate-300 font-medium">{appName}</span></div>
-        <div className="flex justify-between text-xs"><span className="text-slate-500">Platform</span><span className="text-slate-300 font-medium">{platformLabel(platform)}</span></div>
-      </div>
-      {buildComplete && (
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-          <div className="flex items-center gap-2 mb-2"><Rocket className="w-4 h-4 text-emerald-400" /><h4 className="text-sm font-semibold text-slate-200">Ready to deploy</h4></div>
-          <p className="text-xs text-slate-500 mb-3">Your app has been built successfully. Tap incomplete regions to finish them.</p>
-          {incompleteCount > 0 && <div className="flex items-center gap-2 text-xs text-amber-400 mb-3"><Sparkles className="w-3.5 h-3.5" />{incompleteCount} region{incompleteCount > 1 ? 's' : ''} need completion</div>}
-          <button onClick={onDeploy} disabled={incompleteCount > 0} className="w-full rounded-lg py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 text-sm font-semibold transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50">{incompleteCount > 0 ? 'Complete all regions first' : 'Deploy to store'}</button>
-        </div>
-      )}
-    </div>
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800/60 px-2.5 py-1 text-slate-300">
+      <span className="text-slate-500">{label}:</span>
+      <span className="font-medium capitalize">{value}</span>
+    </span>
   );
 }
 
-function generateSchema(regions: AppRegion[], appName: string) {
-  const tables: { name: string; columns: { name: string; type: string; isPrimary?: boolean; isForeign?: boolean }[] }[] = [
-    { name: 'users', columns: [{ name: 'id', type: 'uuid', isPrimary: true }, { name: 'email', type: 'text' }, { name: 'name', type: 'text' }, { name: 'created_at', type: 'timestamptz' }] },
-    { name: appName.toLowerCase().replace(/\s+/g, '_') + '_data', columns: [{ name: 'id', type: 'uuid', isPrimary: true }, { name: 'user_id', type: 'uuid', isForeign: true }, { name: 'title', type: 'text' }, { name: 'status', type: 'text' }, { name: 'created_at', type: 'timestamptz' }] },
-  ];
-  if (!regions.some((r) => r.region_type === 'auth')) tables.shift();
-  return tables;
+/* ===========================================================================
+ * 10. Modal placeholder layer
+ * ========================================================================= */
+
+interface ModalEntry {
+  open: boolean;
+  onClose: () => void;
+  title: string;
 }
 
-function generateSQL(tables: { name: string; columns: { name: string; type: string; isPrimary?: boolean; isForeign?: boolean }[] }[]): string {
-  return tables.map((t) => `CREATE TABLE ${t.name} (\n${t.columns.map((c) => `  ${c.name} ${c.type}${c.isPrimary ? ' PRIMARY KEY DEFAULT gen_random_uuid()' : ''}${c.isForeign ? ` REFERENCES ${t.name === 'users' ? 'profiles' : 'users'}(id)` : ''}`).join(',\n')}\n);`).join('\n\n');
+/**
+ * Renders every modal in the app using the simple open/onClose pattern.
+ * Each entry renders as a styled placeholder that can later be swapped for a
+ * real component without changing the wiring in App.
+ */
+function ModalLayer({ modals }: { modals: ModalEntry[] }) {
+  return (
+    <>
+      {modals.map((m, i) =>
+        m.open ? (
+          <div
+            key={`${m.title}-${i}`}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            <div
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={m.onClose}
+            />
+            <div className="relative w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+              <div className="mb-1 flex items-center justify-between">
+                <h3 className="text-base font-semibold text-white">{m.title}</h3>
+                <button
+                  onClick={m.onClose}
+                  className="rounded-md p-1 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+                  aria-label="Close"
+                >
+                  <Plus className="h-4 w-4 rotate-45" />
+                </button>
+              </div>
+              <p className="text-sm text-slate-300">
+                {m.title} dialog
+              </p>
+              <p className="mt-2 text-xs text-slate-500">
+                This panel is wired up and ready — drop in the full UI here.
+              </p>
+            </div>
+          </div>
+        ) : null
+      )}
+    </>
+  );
 }

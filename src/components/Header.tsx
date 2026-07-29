@@ -1,20 +1,20 @@
 import {
   Sparkles,
-  Plus,
-  Home,
-  LayoutGrid,
   Rocket,
   Download,
   Store,
   GitBranch,
-} from 'lucide-react';
+  Plus,
+  Home,
+  LayoutDashboard,
+} from "lucide-react";
 
 interface HeaderProps {
   projectName?: string;
   appType?: string;
   onNew: () => void;
   onHome: () => void;
-  onDashboard?: () => void;
+  onDashboard: () => void;
   onDeploy?: () => void;
   onExport?: () => void;
   onStore?: () => void;
@@ -33,91 +33,135 @@ export default function Header({
   onExport,
   onStore,
   onVersions,
-  buildComplete,
-  showActions,
+  buildComplete = false,
+  showActions = false,
 }: HeaderProps) {
-  return (
-    <header className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm z-10">
-      <div className="flex items-center gap-3">
-        <button onClick={onHome} className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center transition-transform group-hover:scale-110">
-            <Sparkles className="w-4 h-4 text-slate-900" />
-          </div>
-          <span className="text-sm font-bold text-slate-100">AppForge</span>
-        </button>
-        {projectName && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-slate-700">/</span>
-            <span className="text-sm text-slate-400">{projectName}</span>
-            {appType && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 capitalize">
-                {appType}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+  const actionsVisible = buildComplete || showActions;
 
-      <div className="flex items-center gap-1.5">
-        {showActions && (
-          <>
-            {onVersions && (
-              <ActionButton icon={<GitBranch className="w-3.5 h-3.5" />} label="Versions" onClick={onVersions} />
-            )}
-            {onStore && (
-              <ActionButton icon={<Store className="w-3.5 h-3.5" />} label="Store" onClick={onStore} />
-            )}
-            {onExport && (
-              <ActionButton icon={<Download className="w-3.5 h-3.5" />} label="Export" onClick={onExport} />
-            )}
-            {onDeploy && (
-              <button
-                onClick={onDeploy}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 hover:shadow-lg hover:shadow-emerald-500/25 transition-all hover:scale-[1.02] active:scale-95"
-              >
-                <Rocket className="w-3.5 h-3.5" />
-                Deploy
-              </button>
-            )}
-            <div className="w-px h-5 bg-slate-800 mx-1" />
-          </>
-        )}
-        {onDashboard && (
+  const navItems = [
+    {
+      label: "Build",
+      icon: Home,
+      onClick: onHome,
+    },
+    {
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      onClick: onDashboard,
+    },
+  ];
+
+  const actionButtons = [
+    {
+      label: "Deploy",
+      icon: Rocket,
+      onClick: onDeploy,
+      primary: true,
+    },
+    {
+      label: "Export",
+      icon: Download,
+      onClick: onExport,
+      primary: false,
+    },
+    {
+      label: "Store Assets",
+      icon: Store,
+      onClick: onStore,
+      primary: false,
+    },
+    {
+      label: "Version History",
+      icon: GitBranch,
+      onClick: onVersions,
+      primary: false,
+    },
+  ];
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/95 backdrop-blur supports-[backdrop-filter]:bg-slate-950/80">
+      <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6">
+        {/* Left: Logo + project info */}
+        <div className="flex min-w-0 items-center gap-3">
           <button
-            onClick={onDashboard}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            onClick={onHome}
+            className="group flex shrink-0 items-center gap-2 rounded-lg transition-opacity hover:opacity-80"
+            aria-label="AppForge home"
           >
-            <LayoutGrid className="w-3.5 h-3.5" />
-            Projects
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 via-fuchsia-500 to-indigo-500 shadow-lg shadow-fuchsia-500/20 transition-transform duration-200 group-hover:scale-105">
+              <Sparkles className="h-5 w-5 text-white" />
+            </span>
+            <span className="hidden text-base font-semibold tracking-tight text-white sm:block">
+              AppForge
+            </span>
           </button>
-        )}
-        <button
-          onClick={onHome}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-        >
-          <Home className="w-3.5 h-3.5" />
-          Home
-        </button>
-        <button
-          onClick={onNew}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          New
-        </button>
+
+          {/* Project context */}
+          {projectName && (
+            <div className="flex min-w-0 items-center gap-2 border-l border-slate-800 pl-3">
+              <span className="truncate text-sm font-medium text-slate-200">
+                {projectName}
+              </span>
+              {appType && (
+                <span className="hidden shrink-0 rounded-md border border-slate-700 bg-slate-800/80 px-2 py-0.5 text-xs font-medium text-slate-300 sm:inline-block">
+                  {appType}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Center/Right: Navigation */}
+        <nav className="flex items-center gap-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.label}
+                onClick={item.onClick}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition-colors duration-200 hover:bg-slate-800 hover:text-white"
+              >
+                <Icon className="h-4 w-4" />
+                <span className="hidden md:inline">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Right: Action buttons + New */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {actionsVisible &&
+            actionButtons.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.label}
+                  onClick={action.onClick}
+                  title={action.label}
+                  className={[
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                    action.primary
+                      ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/20 hover:from-violet-500 hover:to-fuchsia-500 hover:shadow-fuchsia-500/30"
+                      : "text-slate-300 hover:bg-slate-800 hover:text-white",
+                  ].join(" ")}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className={action.primary ? "hidden lg:inline" : "hidden lg:inline"}>
+                    {action.label}
+                  </span>
+                </button>
+              );
+            })}
+
+          <button
+            onClick={onNew}
+            className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-medium text-white transition-all duration-200 hover:border-slate-600 hover:bg-slate-700"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">New</span>
+          </button>
+        </div>
       </div>
     </header>
-  );
-}
-
-function ActionButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-    >
-      {icon}
-      {label}
-    </button>
   );
 }

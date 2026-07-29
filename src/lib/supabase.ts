@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -12,16 +12,8 @@ function getClient(): SupabaseClient {
   if (client) return client;
   const url = supabaseUrl || FALLBACK_URL;
   const key = supabaseAnonKey || FALLBACK_KEY;
-  client = createClient(url, key, {
-    auth: { persistSession: false },
-  });
+  client = createClient(url, key, { auth: { persistSession: false } });
   return client;
 }
 
-export const supabase = new Proxy({} as SupabaseClient, {
-  get(_target, prop) {
-    const c = getClient();
-    const value = (c as unknown as Record<string | symbol, unknown>)[prop];
-    return typeof value === 'function' ? value.bind(c) : value;
-  },
-});
+export const supabase = getClient();
