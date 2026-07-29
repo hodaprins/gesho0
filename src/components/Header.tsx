@@ -1,13 +1,4 @@
-import {
-  Sparkles,
-  Rocket,
-  Download,
-  Store,
-  GitBranch,
-  Plus,
-  Home,
-  LayoutDashboard,
-} from "lucide-react";
+import { Sparkles, Rocket, Download, Store, GitBranch, Plus, Chrome as Home, LayoutDashboard } from "lucide-react";
 
 interface HeaderProps {
   projectName?: string;
